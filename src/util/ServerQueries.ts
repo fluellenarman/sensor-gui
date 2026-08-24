@@ -1,5 +1,23 @@
 import express from 'express'
 import { ipcMain } from 'electron'
+import os from 'os'
+
+function getLocalIPAddress() {
+    const interfaces = os.networkInterfaces();
+    const addresses = [];
+
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            // Skip internal (loopback) and non-IPv4 addresses
+            if (iface.family === 'IPv4' && !iface.internal) {
+                addresses.push({ name, address: iface.address });
+            }
+        }
+    }
+
+    console.log("from server, addresses:\n",addresses[0]?.address, '\n');
+    return addresses[0]?.address
+}
 
 function mainTest() {
     console.log('test main')
@@ -17,11 +35,12 @@ function startServer() {
         launcherLocQuery(x, y);
         // Here you can handle the x and y coordinates as needed
     })
+    const ip = getLocalIPAddress()
     const server = express()
     const port = 3000
 
     server.listen(port, () => {
-        console.log(`ServerQueries.ts: Server is running on http://localhost:${port}`)
+        console.log(`ServerQueries.ts: Server is running on ${ip}:${port}`)
     })
 
     server.get('/', (req, res) => {
@@ -39,6 +58,17 @@ async function testQuery() {
     const data = await response.json();
     console.log(data);
     console.log("ServerQueries.ts: testQuery() END\n")
+}
+
+async function sendTestQuery(ip: string) {
+    try {
+        const response = await fetch(`http://${ip}`);
+        const data = await response.text();
+        console.log(data);
+        }
+    catch (error) {
+        console.log(error);
+    }
 }
 
 // url will need to be changed for PROD
@@ -61,4 +91,4 @@ async function launcherLocQuery(x: number, y: number) {
     })
 }
 
-export {mainTest, startServer, testQuery, launchQuery}
+export {mainTest, startServer, testQuery, sendTestQuery, launchQuery}

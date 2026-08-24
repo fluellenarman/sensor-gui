@@ -99,6 +99,12 @@ export const App: Component<Record<string, never>> = () => {
     enableDrag?.()
   }
 
+  function handleIP() {
+    const ip = document.getElementById("ipaddress") as HTMLInputElement;
+    console.log(ip.value);
+    window.electronAPI.onIPReceived(ip.value);
+  }
+
   return (
     <>
       <DragContext.Provider value={{ startDrag }}>
@@ -118,6 +124,12 @@ export const App: Component<Record<string, never>> = () => {
                 >
                   <div class="flex flex-col size-full">
                     <div class="flex mx-[35px] mt-4 p-2 rounded-md bg-base-200 space-x-2">
+                      <input
+                        type="text"
+                        id="ipaddress"
+                        placeholder="IP address"
+                      />
+                      <button onClick={handleIP}>Submit</button>
                       <CreateSensorButton />
                       <ClearSensorsButton />
                       <CreateLaunchMissileButton />
