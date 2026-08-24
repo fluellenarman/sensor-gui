@@ -65,7 +65,8 @@ async function testQuery() {
 
 async function sendTestQuery(ip: string) {
     try {
-        const response = await fetch(`http://${ip}`);
+        const port = 3003
+        const response = await fetch(`http://${ip}:${port}`);
         const data = await response.text();
         console.log(data);
         }
