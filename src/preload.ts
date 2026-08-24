@@ -10,6 +10,7 @@ import { CageData } from './renderer/contexts/CageContext'
 contextBridge.exposeInMainWorld('electronAPI', {
   onPingReceived: (callback: (ping: Ping) => unknown) =>
     ipcRenderer.on('ping-received', (_, ping) => callback(ping)),
+  onIPReceived: (ip: string) => ipcRenderer.invoke('ip-received', ip),
   onUpdateDevices: (
     callback: (devices: { [path: string]: boolean }) => unknown
   ) => ipcRenderer.on('update-devices', (_, devices) => callback(devices)),

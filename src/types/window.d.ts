@@ -10,6 +10,7 @@ declare global {
     electronAPI: {
       // listen for pings received from the main process
       onPingReceived: (callback: (ping: Ping) => unknown) => void
+      onIPReceived: (ip: string) => void
       // listen for changes in device connections
       onUpdateDevices: (
         callback: (devices: DeviceConnections) => unknown

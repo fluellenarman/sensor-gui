@@ -5,7 +5,7 @@ import { initializeSerial } from './main/serialCommunication/initializeSerial'
 import { CageData, parseCageData } from './renderer/contexts/CageContext'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { testingEnvironment } from './util/test'
-import { mainTest, startServer } from './util/ServerQueries'
+import { mainTest, startServer, sendTestQuery } from './util/ServerQueries'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -93,6 +93,15 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
+})
+
+function handleIP(event: IpcMainInvokeEvent, ip: string) {
+  console.log(ip)
+  sendTestQuery(ip)
+}
+
+app.whenReady().then(() => {
+  ipcMain.handle('ip-received', handleIP)
 })
 
 // In this file you can include the rest of your app's specific main process
