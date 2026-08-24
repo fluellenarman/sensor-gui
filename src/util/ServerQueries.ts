@@ -1,6 +1,7 @@
 import express from 'express'
 import { ipcMain } from 'electron'
 import os from 'os'
+import { Discovery } from '../network/discovery'
 
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
@@ -15,19 +16,19 @@ function getLocalIPAddress() {
         }
     }
 
-    console.log("from server, addresses:\n",addresses[0]?.address, '\n');
+    console.log('from server, addresses:\n',addresses[0]?.address, '\n');
     return addresses[0]?.address
 }
 
 function mainTest() {
     console.log('test main')
-    console.log("ServerQueries.ts mainTest() called")
+    console.log('ServerQueries.ts mainTest() called')
     console.log();
 }
 
 function startServer() {
     ipcMain.on('launchMissileRequest', () => {
-        console.log("ServerQueries.ts: received launch missile request from renderer")
+        console.log('ServerQueries.ts: received launch missile request from renderer')
         launchQuery();
     })
     ipcMain.on('launcherLocPing', (event, x: number, y: number) => {
@@ -38,6 +39,8 @@ function startServer() {
     const ip = getLocalIPAddress()
     const server = express()
     const port = 3000
+    const discovery = new Discovery('red-gui', port)
+    discovery.start()
 
     server.listen(port, () => {
         console.log(`ServerQueries.ts: Server is running on ${ip}:${port}`)
@@ -48,7 +51,7 @@ function startServer() {
     })
     testQuery();
 
-    console.log("ServerQueries.ts: startServer() END\n")
+    console.log('ServerQueries.ts: startServer() END\n')
 }
 
 async function testQuery() {
@@ -57,7 +60,7 @@ async function testQuery() {
     const response = await fetch(testURL);
     const data = await response.json();
     console.log(data);
-    console.log("ServerQueries.ts: testQuery() END\n")
+    console.log('ServerQueries.ts: testQuery() END\n')
 }
 
 async function sendTestQuery(ip: string) {
@@ -75,7 +78,7 @@ async function sendTestQuery(ip: string) {
 async function launchQuery() {
     const url = 'http://localhost:3003/pingMissileLaunch';
     const data = await fetch(url).catch((error) => {
-        console.error("Error in launchQuery():", error);
+        console.error('Error in launchQuery():', error);
     })
 }
 
