@@ -16,7 +16,27 @@ function getLocalIPAddress() {
     }
 
     console.log("from server, addresses:\n",addresses[0]?.address, '\n');
+    getWindowsIpAddress()
     return addresses[0]?.address
+}
+
+function getWindowsIpAddress() { // for windows machine. GetLocalIPAddress only works for the linux
+    const interfaces = os.networkInterfaces();
+    const addresses = [];
+
+    for (const name of Object.keys(interfaces)) {
+        if (name == "Wi-Fi") {
+            console.log(name)
+            // console.log(interfaces[name])
+            for (const obj of interfaces[name]) {
+                if (obj.family == 'IPv4') {
+                    console.log("Windows IP address: ", obj.address);
+                }
+            }
+        }
+    }
+
+    return
 }
 
 function mainTest() {
@@ -44,7 +64,7 @@ function startServer() {
     })
 
     server.get('/', (req, res) => {
-        res.send('Hello from the server!')
+        res.send('Hello from RED GUI server!')
     })
     testQuery();
 
