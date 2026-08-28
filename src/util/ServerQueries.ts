@@ -2,6 +2,8 @@ import express from 'express'
 import { ipcMain } from 'electron'
 import os from 'os'
 
+let networkURL = '';
+
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
     const addresses = [];
@@ -44,7 +46,7 @@ function startServer() {
     })
 
     server.get('/', (req, res) => {
-        res.send('Hello from the server!')
+        res.send('Hello from RED GUI server!')
     })
     testQuery();
 
@@ -61,14 +63,18 @@ async function testQuery() {
 }
 
 async function sendTestQuery(ip: string) {
+    const bluePort = 3003
+    const url = `http://${ip}:${bluePort}/`;
+    console.log(url)
     try {
-        const response = await fetch(`http://${ip}`);
+        const response = await fetch(url);
         const data = await response.text();
         console.log(data);
-        }
-    catch (error) {
+        networkURL = url;
+    } catch (error) {
         console.log(error);
     }
+
 }
 
 // url will need to be changed for PROD
@@ -80,15 +86,20 @@ async function launchQuery() {
 }
 
 async function launcherLocQuery(x: number, y: number) {
-    const url = `http://localhost:3003/pingLauncherLoc`;
+    const localhost_url = `http://localhost:3003/pingLauncherLoc`;
     const payload = { x, y };
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
+    try {
+        let targetURL = localhost_url;
+        if (networkURL != '') { targetURL = `${networkURL}pingLauncherLoc`; }
+        console.log(`Sending launcher location to ${targetURL}`);
+        await fetch(targetURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+    } catch (error) {
+        console.error("Error in launcherLocQuery():", error);
+    }
 }
 
 export {mainTest, startServer, testQuery, sendTestQuery, launchQuery}
