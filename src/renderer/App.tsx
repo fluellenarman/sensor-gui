@@ -105,6 +105,17 @@ export const App: Component<Record<string, never>> = () => {
     window.electronAPI.onIPReceived(ip.value);
   }
 
+  window.electronAPI.onReqToMissileHit((data) => {
+    console.log("Received reqToMissileHit from main process", data);
+    const missile = {
+      success: data.success,
+      x: data.x / 20,
+      y: ((600 - data.y) / 40)
+    }
+    if (missile.success)
+      console.log('Missile hit at', missile.x, missile.y)
+  })
+
   return (
     <>
       <DragContext.Provider value={{ startDrag }}>

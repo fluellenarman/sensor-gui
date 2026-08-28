@@ -13,7 +13,6 @@ if (started) {
 }
 
 mainTest()
-startServer()
 
 const createWindow = () => {
   // Create the browser window.
@@ -25,6 +24,9 @@ const createWindow = () => {
     },
     fullscreen: app.isPackaged, // enable fullscreen in production
   })
+
+  startServer(mainWindow)
+
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

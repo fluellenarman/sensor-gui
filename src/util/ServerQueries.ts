@@ -1,5 +1,5 @@
 import express from 'express'
-import { ipcMain } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 import os from 'os'
 
 function getLocalIPAddress() {
@@ -25,7 +25,7 @@ function mainTest() {
     console.log();
 }
 
-function startServer() {
+function startServer(mainWindow: BrowserWindow) {
     ipcMain.on('launchMissileRequest', () => {
         console.log("ServerQueries.ts: received launch missile request from renderer")
         launchQuery();
@@ -38,6 +38,7 @@ function startServer() {
     const ip = getLocalIPAddress()
     const server = express()
     const port = 3000
+    server.use(express.json())
 
     server.listen(port, () => {
         console.log(`ServerQueries.ts: Server is running on ${ip}:${port}`)
@@ -45,6 +46,13 @@ function startServer() {
 
     server.get('/', (req, res) => {
         res.send('Hello from the server!')
+    })
+
+    server.post('/missileHit', (req, res) => {
+        console.log(`ServerQueries.ts: received POST request at /missileHit`)
+        console.log(req.body)
+        const data = req.body
+        mainWindow.webContents.send('missileHit', data)
     })
     testQuery();
 
