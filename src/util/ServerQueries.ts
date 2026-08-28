@@ -79,10 +79,14 @@ async function sendTestQuery(ip: string) {
 
 // url will need to be changed for PROD
 async function launchQuery() {
-    const url = 'http://localhost:3003/pingMissileLaunch';
-    const data = await fetch(url).catch((error) => {
+    const localhost_url = 'http://localhost:3003/pingMissileLaunch';
+    try {
+        let targetURL = localhost_url;
+        if (networkURL != '') { targetURL = `${networkURL}pingMissileLaunch`; }
+        await fetch(targetURL)
+    } catch (error) {
         console.error("Error in launchQuery():", error);
-    })
+    }
 }
 
 async function launcherLocQuery(x: number, y: number) {
