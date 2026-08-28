@@ -49,6 +49,7 @@ function startServer(mainWindow: BrowserWindow) {
     })
 
     server.post('/missileHit', (req, res) => {
+        res.send(`ServerQueries.ts: received POST request at /missileHit`)
         console.log(`ServerQueries.ts: received POST request at /missileHit`)
         console.log(req.body)
         const data = req.body
