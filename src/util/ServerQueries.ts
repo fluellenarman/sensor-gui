@@ -2,12 +2,39 @@ import express from 'express'
 import { ipcMain } from 'electron'
 import os from 'os'
 
+let blueIP: string;
+
+ipcMain.on('sensorDataReceived', async (event, data) => {
+    console.log('Received data from renderer:', data)
+    const url = `${blueIP}/droneDetected`;
+    console.log("Constructed URL:", url);
+
+    try {
+        await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+    } catch (error) {
+        console.error('ServerQuearies.ts:', error)
+    }
+})
+
+ipcMain.handle('ip-received', (event, ip)=> {
+    const port = 3003
+    blueIP = `http://${ip}:${port}`;
+    sendTestQuery()
+    console.log(blueIP)
+})
+
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
     const addresses = [];
 
     for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
+        for (const iface of interfaces[name] ?? []) {
             // Skip internal (loopback) and non-IPv4 addresses
             if (iface.family === 'IPv4' && !iface.internal) {
                 addresses.push({ name, address: iface.address });
@@ -60,9 +87,9 @@ async function testQuery() {
     console.log("ServerQueries.ts: testQuery() END\n")
 }
 
-async function sendTestQuery(ip: string) {
+async function sendTestQuery() {
     try {
-        const response = await fetch(`http://${ip}`);
+        const response = await fetch(blueIP);
         const data = await response.text();
         console.log(data);
         }

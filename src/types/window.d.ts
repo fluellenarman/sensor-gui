@@ -28,6 +28,10 @@ declare global {
 
       onJam: (callback: (typeId: number, sensorId: number) => unknown) => void
       toggleMockSensors: (enabled: boolean) => Promise<{ success: boolean; message: string }>
+      onReqToMissileHit: (callback) => void
+    },
+    rendererToMain: {
+      onSensorData: (callback) => void
     }
   }
 }

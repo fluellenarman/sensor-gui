@@ -27,3 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendLaunchMissileRequest: () => ipcRenderer.send('launchMissileRequest'),
   sendLauncherLocPing: (x: number, y: number) => ipcRenderer.send('launcherLocPing', x, y),
 })
+
+contextBridge.exposeInMainWorld('rendererToMain', {
+      onSensorData: (data) => ipcRenderer.send('sensorDataReceived', data)
+})
