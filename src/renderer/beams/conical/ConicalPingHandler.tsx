@@ -47,7 +47,7 @@ export const ConicalPingHandler: Component<{
   )
 
   // the list of all actively displayed pings for the current sensor
-  const [pinsData, setPingsData] = createStore<{
+  const [pingsData, setPingsData] = createStore<{
     pings: { distance: number }[]
   }>({
     pings: [],
@@ -64,6 +64,16 @@ export const ConicalPingHandler: Component<{
 
       if (sensor.data.getIsMoving()) {
         console.log('Sensor is detecting movement.')
+        const data = {
+          xFeet: sensor.data.xFeet,
+          yFeet: sensor.data.yFeet,
+          horizontalAngle: sensor.data.horizontalAngle,
+          verticalAngle: sensor.data.verticalAngle,
+          routNumber: sensor.data.routNumber,
+          maxRange: sensor.data.maxRange,
+          distance: centimeters
+        }
+        window.rendererToMain.onSensorData(data)
       }
 
       // Mark sensor as connected
@@ -88,7 +98,7 @@ export const ConicalPingHandler: Component<{
       fadeStartTime = performance.now()
 
       // create the ping to be displayed
-      setPingsData('pings', pinsData.pings.length, { distance: feet })
+      setPingsData('pings', pingsData.pings.length, { distance: feet })
     })
   })
 
@@ -110,7 +120,7 @@ export const ConicalPingHandler: Component<{
   return (
     <>
       {/* create a ping object for each distance tracked */}
-      <For each={pinsData.pings}>
+      <For each={pingsData.pings}>
         {(ping, getIndex) => (
           <>
             <ConicalBeamPing
@@ -118,7 +128,7 @@ export const ConicalPingHandler: Component<{
               finish={() =>
                 setPingsData(
                   'pings',
-                  pinsData.pings.filter((_, index) => index !== getIndex()),
+                  pingsData.pings.filter((_, index) => index !== getIndex()),
                 )
               }
             />

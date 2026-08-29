@@ -19,20 +19,7 @@ export const Sensors: Component<{}> = () => {
         (sensor) =>
           sensor.type === ping.type && sensor.routNumber === ping.sensorId,
       )
-      .forEach((sensor) => {
-        console.log(sensor)
-        sensor.getPingHandler()?.(ping.distance)
-        const data = {
-          xFeet: sensor.xFeet,
-          yFeet: sensor.yFeet,
-          horizontalAngle: sensor.horizontalAngle,
-          verticalAngle: sensor.verticalAngle,
-          routNumber: sensor.routNumber,
-          maxRange: sensor.maxRange,
-          ...ping
-        }
-        window.rendererToMain.onSensorData(data)
-      })
+      .forEach((sensor) => sensor.getPingHandler()?.(ping.distance))
   })
 
   window.electronAPI.onJam((typeId, sensorId) => {

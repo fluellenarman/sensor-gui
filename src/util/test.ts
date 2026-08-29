@@ -15,6 +15,14 @@ export function testingEnvironment() {
                 sensorId,
             })
         }, 1000)
+
+        setInterval(() => {
+            sendPing({
+                type: 'ultrasonic',
+                distance: 400,
+                sensorId
+            })
+        }, 5000)
     }
 }
 
