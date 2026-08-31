@@ -37,6 +37,11 @@ function startServer(mainWindow: BrowserWindow) {
         launcherLocQuery(x, y);
         // Here you can handle the x and y coordinates as needed
     })
+    ipcMain.on('LOS_LocPing', (event, x: number, y: number) => {
+        console.log(`ServerQueries.ts: received launcher LOS location ping from renderer: x=${x}, y=${y}`)
+        LOS_LocQuery(x, y);
+        // Here you can handle the x and y coordinates as needed
+    })
     const ip = getLocalIPAddress()
     const server = express()
     server.use(express.json())
@@ -98,6 +103,23 @@ async function launchQuery() {
 
 async function launcherLocQuery(x: number, y: number) {
     const localhost_url = `http://localhost:3003/pingLauncherLoc`;
+    const payload = { x, y };
+    try {
+        let targetURL = localhost_url;
+        if (networkURL != '') { targetURL = `${networkURL}pingLauncherLoc`; }
+        console.log(`Sending launcher location to ${targetURL}`);
+        await fetch(targetURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+    } catch (error) {
+        console.error("Error in launcherLocQuery():", error);
+    }
+}
+
+async function LOS_LocQuery(x: number, y: number) {
+    const localhost_url = `http://localhost:3003/pingLOSLoc`;
     const payload = { x, y };
     try {
         let targetURL = localhost_url;
