@@ -1,5 +1,5 @@
 import express from 'express'
-import { ipcMain } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 import os from 'os'
 
 let networkURL = '';
@@ -27,7 +27,7 @@ function mainTest() {
     console.log();
 }
 
-function startServer() {
+function startServer(mainWindow: BrowserWindow) {
     ipcMain.on('launchMissileRequest', () => {
         console.log("ServerQueries.ts: received launch missile request from renderer")
         launchQuery();
@@ -39,6 +39,7 @@ function startServer() {
     })
     const ip = getLocalIPAddress()
     const server = express()
+    server.use(express.json())
     const port = 3000
 
     server.listen(port, () => {
@@ -47,6 +48,13 @@ function startServer() {
 
     server.get('/', (req, res) => {
         res.send('Hello from RED GUI server!')
+    })
+    server.post('/droneLoc', (req, res) => {
+        res.send('ok')
+        console.log("ServerQueries.ts: received drone location ping from Blue GUI")
+        const data = req.body;
+        console.log(data); // Log the received dataping from Blue GUI
+        mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
     })
     testQuery();
 
@@ -74,7 +82,6 @@ async function sendTestQuery(ip: string) {
     } catch (error) {
         console.log(error);
     }
-
 }
 
 // url will need to be changed for PROD

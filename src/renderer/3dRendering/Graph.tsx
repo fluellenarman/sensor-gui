@@ -1,9 +1,9 @@
-import { Component, createEffect, createMemo, JSX, onMount } from 'solid-js'
+import { Component, createEffect, createSignal, createMemo, JSX, onMount, onCleanup } from 'solid-js'
 import { CageContext } from '../contexts/CageContext.js'
 import { GridContext } from '../contexts/GridContext.js'
 import { useContextOrThrow } from '../../util/useContextOrThrow.js'
 import {
-  BoxGeometry,
+  BoxGeometry, CircleGeometry,
   Mesh,
   MeshBasicMaterial,
   OrthographicCamera,
@@ -13,6 +13,58 @@ import {
 import { GraphingContext, GraphingType } from '../contexts/GraphingContext.js'
 import { SensorsContext } from '../contexts/SensorsContext.js'
 import { metersPerFoot } from '../../util/mathConstants.js'
+import { xid } from 'zod/v4'
+
+const [circleX, setCircleX] = createSignal(10)
+const [circleY, setCircleY] = createSignal(8)
+
+
+window.electronAPI.onDroneLocPing((loc: object) => {
+  console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
+  const finalLoc = {
+    x: loc.x / 20,
+    y: -((loc.y / 40) - 15)
+  }
+  setCircleX(finalLoc.x)
+  setCircleY(finalLoc.y)
+})
+
+export const StaticCircle: Component<{
+  xFeet: number
+  yFeet: number
+  radiusFeet: number
+  color?: number
+}> = (props) => {
+  const graphing = useContextOrThrow(GraphingContext)
+
+  const geometry = new CircleGeometry(1, 64) // unit circle; scale to radius
+  const material = new MeshBasicMaterial({
+    color: props.color ?? 0x22c55e,
+    transparent: true,
+    opacity: 0.8,
+  })
+  const mesh = new Mesh(geometry, material)
+
+  onMount(() => {
+    graphing.scene.add(mesh)
+    graphing.requestRender()
+  })
+
+  createEffect(() => {
+    mesh.position.set(props.xFeet, props.yFeet, 0)
+    mesh.scale.set(props.radiusFeet, props.radiusFeet, 1)
+    graphing.requestRender()
+  })
+
+  onCleanup(() => {
+    graphing.scene.remove(mesh)
+    geometry.dispose()
+    material.dispose()
+    graphing.requestRender()
+  })
+
+  return null
+}
 
 export const Graph: Component<{
   children: JSX.Element
@@ -105,6 +157,7 @@ export const Graph: Component<{
   return (
     <>
       <GraphingContext.Provider value={graphing}>
+        <StaticCircle xFeet={circleX()} yFeet={circleY()} radiusFeet={.5} color={0xff0000} />
         {props.children}
         <div
           class="absolute size-min pointer-events-none"
