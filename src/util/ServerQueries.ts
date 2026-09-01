@@ -1,6 +1,8 @@
 import express from 'express'
-import { ipcMain } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 import os from 'os'
+
+let networkURL = '';
 
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
@@ -25,7 +27,7 @@ function mainTest() {
     console.log();
 }
 
-function startServer() {
+function startServer(mainWindow: BrowserWindow) {
     ipcMain.on('launchMissileRequest', () => {
         console.log("ServerQueries.ts: received launch missile request from renderer")
         launchQuery();
@@ -35,8 +37,14 @@ function startServer() {
         launcherLocQuery(x, y);
         // Here you can handle the x and y coordinates as needed
     })
+    ipcMain.on('LOS_LocPing', (event, x: number, y: number) => {
+        console.log(`ServerQueries.ts: received launcher LOS location ping from renderer: x=${x}, y=${y}`)
+        LOS_LocQuery(x, y);
+        // Here you can handle the x and y coordinates as needed
+    })
     const ip = getLocalIPAddress()
     const server = express()
+    server.use(express.json())
     const port = 3000
 
     server.listen(port, () => {
@@ -44,7 +52,14 @@ function startServer() {
     })
 
     server.get('/', (req, res) => {
-        res.send('Hello from the server!')
+        res.send('Hello from RED GUI server!')
+    })
+    server.post('/droneLoc', (req, res) => {
+        res.send('ok')
+        console.log("ServerQueries.ts: received drone location ping from Blue GUI")
+        const data = req.body;
+        console.log(data); // Log the received dataping from Blue GUI
+        mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
     })
     testQuery();
 
@@ -61,34 +76,63 @@ async function testQuery() {
 }
 
 async function sendTestQuery(ip: string) {
+    const bluePort = 3003
+    const url = `http://${ip}:${bluePort}/`;
+    console.log(url)
     try {
-        const response = await fetch(`http://${ip}`);
+        const response = await fetch(url);
         const data = await response.text();
         console.log(data);
-        }
-    catch (error) {
+        networkURL = url;
+    } catch (error) {
         console.log(error);
     }
 }
 
 // url will need to be changed for PROD
 async function launchQuery() {
-    const url = 'http://localhost:3003/pingMissileLaunch';
-    const data = await fetch(url).catch((error) => {
+    const localhost_url = 'http://localhost:3003/pingMissileLaunch';
+    try {
+        let targetURL = localhost_url;
+        if (networkURL != '') { targetURL = `${networkURL}pingMissileLaunch`; }
+        await fetch(targetURL)
+    } catch (error) {
         console.error("Error in launchQuery():", error);
-    })
+    }
 }
 
 async function launcherLocQuery(x: number, y: number) {
-    const url = `http://localhost:3003/pingLauncherLoc`;
+    const localhost_url = `http://localhost:3003/pingLauncherLoc`;
     const payload = { x, y };
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    })
+    try {
+        let targetURL = localhost_url;
+        if (networkURL != '') { targetURL = `${networkURL}pingLauncherLoc`; }
+        console.log(`Sending launcher location to ${targetURL}`);
+        await fetch(targetURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+    } catch (error) {
+        console.error("Error in launcherLocQuery():", error);
+    }
+}
+
+async function LOS_LocQuery(x: number, y: number) {
+    const localhost_url = `http://localhost:3003/pingLOSLoc`;
+    const payload = { x, y };
+    try {
+        let targetURL = localhost_url;
+        if (networkURL != '') { targetURL = `${networkURL}pingLauncherLoc`; }
+        console.log(`Sending launcher location to ${targetURL}`);
+        await fetch(targetURL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+    } catch (error) {
+        console.error("Error in launcherLocQuery():", error);
+    }
 }
 
 export {mainTest, startServer, testQuery, sendTestQuery, launchQuery}

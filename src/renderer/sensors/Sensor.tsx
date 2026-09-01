@@ -108,8 +108,15 @@ export const Sensor: Component<{
       console.log(`Sensor type: ${sensor.data.type}`)
       console.log(sensor.data.xFeet, sensor.data.yFeet)
       if (getMouseDown() == false) {
-        console.log("LAUNCH QUERY HERE")
         window.electronAPI.sendLauncherLocPing(sensor.data.xFeet, sensor.data.yFeet)
+        // launchQuery();
+      }
+    }
+    if (sensor.data.type === 'TTR') { 
+      console.log(`Sensor type: ${sensor.data.type}`)
+      console.log(sensor.data.xFeet, sensor.data.yFeet)
+      if (getMouseDown() == false) {
+        window.electronAPI.sendLOS_LocPing(sensor.data.xFeet, sensor.data.yFeet)
         // launchQuery();
       }
     }

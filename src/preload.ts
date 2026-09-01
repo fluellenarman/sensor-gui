@@ -6,6 +6,8 @@ import { Ping } from './types/Pings'
 import { DeviceConnections } from './types/DevicesStatus'
 import { ReadlineParser, SerialPort } from 'serialport'
 import { CageData } from './renderer/contexts/CageContext'
+import { send } from 'vite'
+
 
 contextBridge.exposeInMainWorld('electronAPI', {
   onPingReceived: (callback: (ping: Ping) => unknown) =>
@@ -26,4 +28,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('toggle-mock-sensors', enabled), 
   sendLaunchMissileRequest: () => ipcRenderer.send('launchMissileRequest'),
   sendLauncherLocPing: (x: number, y: number) => ipcRenderer.send('launcherLocPing', x, y),
+  onDroneLocPing: (callback) => ipcRenderer.on('droneLocPing', (_event, data) => callback(data)),
+  sendLOS_LocPing: (x: number, y: number) => ipcRenderer.send('LOS_LocPing', x, y),
 })
+ 
