@@ -17,16 +17,28 @@ import { xid } from 'zod/v4'
 
 const [circleX, setCircleX] = createSignal(10)
 const [circleY, setCircleY] = createSignal(8)
+const [circle2X, setCircle2X] = createSignal(14)
+const [circle2Y, setCircle2Y] = createSignal(14)
+
 
 
 window.electronAPI.onDroneLocPing((loc: object) => {
-  console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
+  // console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
   const finalLoc = {
     x: loc.x / 20,
     y: -((loc.y / 40) - 15)
   }
   setCircleX(finalLoc.x)
   setCircleY(finalLoc.y)
+})
+window.electronAPI.onMissileLocPing((loc: object) => {
+  // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
+  const finalLoc = {
+    x: loc.x / 20,
+    y: -((loc.y / 40) - 15)
+  }
+  setCircle2X(finalLoc.x)
+  setCircle2Y(finalLoc.y)
 })
 
 export const StaticCircle: Component<{
@@ -158,6 +170,7 @@ export const Graph: Component<{
     <>
       <GraphingContext.Provider value={graphing}>
         <StaticCircle xFeet={circleX()} yFeet={circleY()} radiusFeet={.5} color={0xff0000} />
+        <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} color={0x00ff66} />
         {props.children}
         <div
           class="absolute size-min pointer-events-none"
