@@ -15,12 +15,21 @@ import { SensorsContext } from '../contexts/SensorsContext.js'
 import { metersPerFoot } from '../../util/mathConstants.js'
 import { xid } from 'zod/v4'
 
-const [circleX, setCircleX] = createSignal(10)
-const [circleY, setCircleY] = createSignal(8)
+const [circle1X, setCircle1X] = createSignal(10)
+const [circle1Y, setCircle1Y] = createSignal(8)
+const [circle1Opacity, setcircle1Opacity] = createSignal(.8)
 const [circle2X, setCircle2X] = createSignal(14)
 const [circle2Y, setCircle2Y] = createSignal(14)
+const [circle2Opacity, setcircle2Opacity] = createSignal(.8)
 
 
+let id = setInterval(() => {
+    const opacity1 = circle1Opacity();
+    const opacity2 = circle2Opacity();
+    // if (radius <= 0) { continue; }
+    if (circle1Opacity() >= 0) { setcircle1Opacity(opacity1 - .1) }
+    if (circle2Opacity() >= 0) { setcircle2Opacity(opacity2 - .1) }
+}, 100);
 
 window.electronAPI.onDroneLocPing((loc: object) => {
   // console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
@@ -28,8 +37,9 @@ window.electronAPI.onDroneLocPing((loc: object) => {
     x: loc.x / 20,
     y: -((loc.y / 40) - 15)
   }
-  setCircleX(finalLoc.x)
-  setCircleY(finalLoc.y)
+  setcircle1Opacity(.8)
+  setCircle1X(finalLoc.x)
+  setCircle1Y(finalLoc.y)
 })
 window.electronAPI.onMissileLocPing((loc: object) => {
   // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
@@ -37,6 +47,7 @@ window.electronAPI.onMissileLocPing((loc: object) => {
     x: loc.x / 20,
     y: -((loc.y / 40) - 15)
   }
+  setcircle2Opacity(.8)
   setCircle2X(finalLoc.x)
   setCircle2Y(finalLoc.y)
 })
@@ -46,6 +57,7 @@ export const StaticCircle: Component<{
   yFeet: number
   radiusFeet: number
   color?: number
+  opacity?: number
 }> = (props) => {
   const graphing = useContextOrThrow(GraphingContext)
 
@@ -53,7 +65,7 @@ export const StaticCircle: Component<{
   const material = new MeshBasicMaterial({
     color: props.color ?? 0x22c55e,
     transparent: true,
-    opacity: 0.8,
+    opacity: props.opacity ?? 0.8,
   })
   const mesh = new Mesh(geometry, material)
 
@@ -65,6 +77,11 @@ export const StaticCircle: Component<{
   createEffect(() => {
     mesh.position.set(props.xFeet, props.yFeet, 0)
     mesh.scale.set(props.radiusFeet, props.radiusFeet, 1)
+
+    // reactively update opacity like x/y/radius
+    material.opacity = props.opacity ?? 0.8
+    material.transparent = material.opacity < 1
+
     graphing.requestRender()
   })
 
@@ -169,8 +186,8 @@ export const Graph: Component<{
   return (
     <>
       <GraphingContext.Provider value={graphing}>
-        <StaticCircle xFeet={circleX()} yFeet={circleY()} radiusFeet={.5} color={0xff0000} />
-        <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} color={0x00ff66} />
+        <StaticCircle xFeet={circle1X()} yFeet={circle1Y()} radiusFeet={.5} opacity={circle1Opacity()} color={0xff0000} />
+        <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} opacity={circle2Opacity()} color={0x00ff66} />
         {props.children}
         <div
           class="absolute size-min pointer-events-none"
