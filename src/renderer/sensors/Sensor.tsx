@@ -18,6 +18,28 @@ import { SensorContext } from '../contexts/SensorContext.js'
 import { CageContext } from '../contexts/CageContext.js'
 import { DragContext } from '../contexts/DragContext.js'
 import { launchQuery } from '../../util/ServerQueries.js'
+import { ConicalBeam } from '../beams/conical/ConicalBeam.jsx'
+
+
+const [iconColor, setIconColor] = createSignal('black')
+
+let LOS_received = false
+
+window.electronAPI.onLOS_ping((loc: object) => {
+  // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
+  console.log("LOS ping received from main")
+  setIconColor('green');
+  LOS_received = true;
+})
+
+setInterval(() => { // To reset the icon color to black if no LOS ping is received within 2 second
+  if (LOS_received === true) {
+    LOS_received = false
+  } else if (LOS_received === false) {
+    setIconColor('black');
+  }
+}, 1000)
+
 
 // Visual indicator for a sensor and its pings
 export const Sensor: Component<{
@@ -177,6 +199,7 @@ export const Sensor: Component<{
         onMouseLeave={startDragging}
         onMouseMove={startDragging}
       >
+        {/* <ConicalBeam/> */}
         <circle
           r="1rem"
           onClick={(event) => {
@@ -187,6 +210,7 @@ export const Sensor: Component<{
           stroke-width={usingSidebar() === true ? '1' : '0'}
           transform-origin="center"
           transform={`translate(${getX()}, ${getY()})`}
+          fill={iconColor()}
           fill-opacity="0.8"
           onMouseDown={() => setMouseDown(true)}
           onMouseUp={() => setMouseDown(false)}

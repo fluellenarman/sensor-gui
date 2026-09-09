@@ -56,17 +56,22 @@ function startServer(mainWindow: BrowserWindow) {
     })
     server.post('/droneLoc', (req, res) => {
         res.send('ok')
-        console.log("ServerQueries.ts: received drone location ping from Blue GUI")
+        // console.log("ServerQueries.ts: received drone location ping from Blue GUI")
         const data = req.body;
         console.log(data); // Log the received dataping from Blue GUI
         mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
     })
     server.post('/missileLoc', (req, res) => {
         res.send('ok')
-        console.log("ServerQueries.ts: received missile location ping from Blue GUI")
+        // console.log("ServerQueries.ts: received missile location ping from Blue GUI")
         const data = req.body;
         console.log(data);
         mainWindow.webContents.send('missileLocPing', data) // Forward the data to the renderer process
+    })
+    server.get('/LOS-ping', (req, res) => {
+        res.send('ok')
+        console.log("ServerQueries.ts: received LOS ping from Blue GUI")
+        mainWindow.webContents.send('LOS-ping') // Forward the data to the renderer process
     })
 
     testQuery();
