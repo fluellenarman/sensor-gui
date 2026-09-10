@@ -61,6 +61,12 @@ function startServer(mainWindow: BrowserWindow) {
         console.log(data); // Log the received dataping from Blue GUI
         mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
     })
+
+    server.get('/missileHit', (req, res) => {
+        res.send('Received POST request at /missileHit')
+        console.log("ServerQueries.ts: received missile hit ping from Blue GUI")
+    })
+
     testQuery();
 
     console.log("ServerQueries.ts: startServer() END\n")
