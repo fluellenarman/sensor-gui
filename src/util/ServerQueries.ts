@@ -73,6 +73,11 @@ function startServer(mainWindow: BrowserWindow) {
         console.log("ServerQueries.ts: received LOS ping from Blue GUI")
         mainWindow.webContents.send('LOS-ping') // Forward the data to the renderer process
     })
+    server.get('/FlarePing', (req, res) => {
+        res.send('ok')
+        console.log("ServerQueries.ts: /FlarePing HIT from Blue GUI")
+        mainWindow.webContents.send('flarePing') // Forward the data to the renderer process
+    })
 
     testQuery();
 

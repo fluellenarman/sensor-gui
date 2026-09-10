@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal, createMemo, JSX, onMount, onCleanup } from 'solid-js'
+import { Component, createEffect, createSignal, createMemo, JSX, onMount, onCleanup, Show } from 'solid-js'
 import { CageContext } from '../contexts/CageContext.js'
 import { GridContext } from '../contexts/GridContext.js'
 import { useContextOrThrow } from '../../util/useContextOrThrow.js'
@@ -13,6 +13,7 @@ import {
 import { GraphingContext, GraphingType } from '../contexts/GraphingContext.js'
 import { SensorsContext } from '../contexts/SensorsContext.js'
 import { metersPerFoot } from '../../util/mathConstants.js'
+import { For } from "solid-js";
 import { xid } from 'zod/v4'
 
 const [circle1X, setCircle1X] = createSignal(10)
@@ -22,6 +23,21 @@ const [circle2X, setCircle2X] = createSignal(14)
 const [circle2Y, setCircle2Y] = createSignal(14)
 const [circle2Opacity, setcircle2Opacity] = createSignal(.8)
 
+type Flare = {
+  id: number
+  x: number
+  y: number
+  radius: number
+  opacity: number
+}
+
+const [flares, setFlares] = createSignal<Flare[]>([])
+let flareIdCounter = 0
+const FLARE_COUNT = 20
+const FLARE_SCATTER_RADIUS = 4 // feet
+const FLARE_FADE_STEP = 0.05
+
+const [renderFlare, setRenderFlare] = createSignal(false)
 
 let id = setInterval(() => {
     const opacity1 = circle1Opacity();
@@ -29,6 +45,13 @@ let id = setInterval(() => {
     // if (radius <= 0) { continue; }
     if (circle1Opacity() >= 0) { setcircle1Opacity(opacity1 - .1) }
     if (circle2Opacity() >= 0) { setcircle2Opacity(opacity2 - .1) }
+
+    // fade out flares and remove fully-faded ones
+    setFlares((current) =>
+      current
+        .map((flare) => ({ ...flare, opacity: flare.opacity - FLARE_FADE_STEP }))
+        .filter((flare) => flare.opacity > 0)
+    )
 }, 100);
 
 window.electronAPI.onDroneLocPing((loc: object) => {
@@ -50,6 +73,25 @@ window.electronAPI.onMissileLocPing((loc: object) => {
   setcircle2Opacity(.8)
   setCircle2X(finalLoc.x)
   setCircle2Y(finalLoc.y)
+})
+window.electronAPI.onFlarePing((loc: object) => {
+  // console.log("Graph.tsx: received flare location from main", loc.x, loc.y)
+  const originX = circle1X()
+  const originY = circle1Y()
+
+  const newFlares: Flare[] = Array.from({ length: FLARE_COUNT }, () => {
+    const angle = Math.random() * Math.PI * 2
+    const distance = Math.random() * FLARE_SCATTER_RADIUS
+    return {
+      id: flareIdCounter++,
+      x: originX + Math.cos(angle) * distance,
+      y: originY + Math.sin(angle) * distance,
+      radius: 0.2 + Math.random() * 0.3,
+      opacity: .8,
+    }
+  })
+
+  setFlares((current) => [...current, ...newFlares])
 })
 
 export const StaticCircle: Component<{
@@ -189,6 +231,19 @@ export const Graph: Component<{
         <StaticCircle xFeet={circle1X()} yFeet={circle1Y()} radiusFeet={.5} opacity={circle1Opacity()} color={0xff0000} />
         <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} opacity={circle2Opacity()} color={0x00ff66} />
         {props.children}
+
+        <For each={flares()}>
+          {(flare) => (
+            <StaticCircle
+              xFeet={flare.x}
+              yFeet={flare.y}
+              radiusFeet={flare.radius}
+              opacity={flare.opacity}
+              color={0xff0000}
+            />
+          )}
+        </For>
+
         <div
           class="absolute size-min pointer-events-none"
           ref={threeContainer}
