@@ -3,6 +3,7 @@ import { ipcMain, BrowserWindow } from 'electron'
 import os from 'os'
 
 let networkURL = '';
+let gWindow: BrowserWindow;
 
 function getLocalIPAddress() {
     const interfaces = os.networkInterfaces();
@@ -28,6 +29,7 @@ function mainTest() {
 }
 
 function startServer(mainWindow: BrowserWindow) {
+    gWindow = mainWindow;
     ipcMain.on('launchMissileRequest', () => {
         console.log("ServerQueries.ts: received launch missile request from renderer")
         launchQuery();
@@ -96,16 +98,34 @@ async function testQuery() {
 async function sendTestQuery(ip: string) {
     const bluePort = 3003
     const url = `http://${ip}:${bluePort}/`;
+    gWindow.webContents.send('sendIP-feedback', "progress")
     console.log(url)
     try {
-        const response = await fetch(url);
-        const data = await response.text();
-        console.log(data);
-        networkURL = url;
-    } catch (error) {
+        await fetch(url, {
+            method: 'GET',
+        });
+        gWindow.webContents.send('sendIP-feedback', "success")
+    } catch (error) { 
         console.log(error);
+        gWindow.webContents.send('sendIP-feedback', "failed")
     }
 }
+
+// async function testQuery2(url) {
+//     gWindow.webContents.send('sendIP-feedback', "progress")
+//     colorPrint("yellow", "ServerQueries.ts: testQuery2(): Calling url: ", url)
+//     try {
+//         await fetch(url, {
+//             method: 'GET',
+//         });
+//         colorPrint("green", "ServerQueries.ts: testQuery2(): successful GET request to ", url);
+//         gWindow.webContents.send('sendIP-feedback', "success")
+//     } catch (error) {
+//         // console.log("ServerQueries.ts: testQuery2() error: ", error);
+//         colorPrint("red", "ServerQueries.ts: testQuery2() error: ", error);
+//         gWindow.webContents.send('sendIP-feedback', "failed")
+//     }
+// }
 
 // url will need to be changed for PROD
 async function launchQuery() {

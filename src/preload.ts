@@ -33,5 +33,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onLOS_ping: (callback) => ipcRenderer.on('LOS-ping', (_event, data) => callback(data)),
   onFlarePing: (callback) => ipcRenderer.on('flarePing', (_event, data) => callback(data)),
   sendLOS_LocPing: (x: number, y: number) => ipcRenderer.send('LOS_LocPing', x, y),
+  onIP_feedback: (callback) => ipcRenderer.on('sendIP-feedback', (_event, data) => callback(data)),
 })
  

@@ -15,6 +15,8 @@ import { QuitConfirmation } from './QuitConfirmation.jsx'
 import { QuitButton } from './QuitButton.jsx'
 import { DragShield } from './DragShield.jsx'
 import { DragContext } from './contexts/DragContext.js'
+import { Toaster, toast } from 'solid-toast';
+
 
 // this is the top level component of the renderer. It is inserted into the root element
 // (a div inside <body>)
@@ -32,6 +34,20 @@ export const App: Component<Record<string, never>> = () => {
     ],
     rowCount: 0,
     columnCount: 0,
+  })
+
+  window.electronAPI.onIP_feedback((data) => {
+    console.log("IP_addressInput.tsx: onIP_feedback: HIT")
+    if (data == "progress") {
+        toast.loading("Connecting to IP address...", {duration: 3000})
+        console.log("IP_addressInput.tsx: onReqToLOSLoc: progress")
+    } else if (data == "success") {
+        console.log("IP_addressInput.tsx: onReqToLOSLoc: success")
+        toast.success("Successfully connected to IP address.", {duration: 5000})
+    } else if (data == "failed") {
+        console.log("IP_addressInput.tsx: onReqToLOSLoc: failed")
+        toast.error("Failed to connect to IP address. Please check the address and try again.", {duration: 5000})
+    }
   })
 
   async function loadCage() {
@@ -107,6 +123,7 @@ export const App: Component<Record<string, never>> = () => {
 
   return (
     <>
+      <Toaster position="top-right" /> 
       <DragContext.Provider value={{ startDrag }}>
         <CageContext.Provider value={cage}>
           <SidebarContext.Provider value={{ setSidebar: setSidebarContent }}>
