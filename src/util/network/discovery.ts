@@ -34,7 +34,7 @@ export class DiscoveryNetwork {
         private readonly id = "red-gui",
         private readonly multicast = "224.0.0.1",
         private readonly port = 41234,
-        private readonly httpPort = 3003,
+        private readonly httpPort = 3000,
     ) {}
 
     start() {
@@ -62,7 +62,7 @@ export class DiscoveryNetwork {
         });
 
         this.socket.bind(this.port, () => {
-            // this.socket.setBroadcast(true);
+            this.socket.setBroadcast(true);
             this.socket.addMembership(this.multicast);
             this.broadcast();
         });
@@ -83,14 +83,14 @@ export class DiscoveryNetwork {
                 return;
             }
 
-            // for (const iface of getLocalAddresses()) {
-            //     const broadcast = getBroadcastAddress(
-            //         iface.address,
-            //         iface.netmask,
-            //     );
-            //     this.socket.send(data, this.port, broadcast);
-            // }
-            this.socket.send(data, this.port, this.multicast);
+            for (const iface of getLocalAddresses()) {
+                const broadcast = getBroadcastAddress(
+                    iface.address,
+                    iface.netmask,
+                );
+                this.socket.send(data, this.port, broadcast);
+            }
+            // this.socket.send(data, this.port, this.multicast);
         }, 5000);
     }
 
@@ -120,9 +120,9 @@ export class DiscoveryNetwork {
 
     private handleResponse(message: DiscoveryMessage, rinfo: dgram.RemoteInfo) {
         // return if not in device list or already found
-        if (!this.devices.has(message.id) || this.peers.has(message.id)) return;
-
         const ip = `${rinfo.address}:${message.port}`;
+        if (!this.devices.has(message.id) || this.peers.get(message.id) !== ip)
+            return;
         this.peers.set(message.id, ip);
     }
 
