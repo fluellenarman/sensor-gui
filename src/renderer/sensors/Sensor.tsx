@@ -23,6 +23,9 @@ import { ConicalBeam } from '../beams/conical/ConicalBeam.jsx'
 
 const [iconColor, setIconColor] = createSignal('black')
 
+export const [TTRx, setTTRx] = createSignal(0)
+export const [TTRy, setTTRy] = createSignal(0)
+
 let LOS_received = false
 
 window.electronAPI.onLOS_ping((loc: object) => {
@@ -137,6 +140,8 @@ export const Sensor: Component<{
     if (sensor.data.type === 'TTR') { 
       console.log(`Sensor type: ${sensor.data.type}`)
       console.log(sensor.data.xFeet, sensor.data.yFeet)
+      setTTRx(sensor.data.xFeet)
+      setTTRy(sensor.data.yFeet)
       if (getMouseDown() == false) {
         window.electronAPI.sendLOS_LocPing(sensor.data.xFeet, sensor.data.yFeet)
         // launchQuery();

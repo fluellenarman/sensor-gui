@@ -146,3 +146,77 @@ export const ConicalBeam: Component = () => {
     </>
   )
 }
+
+// ...existing code...
+
+export const SimpleConicalBeam: Component<{
+  xFeet?: number
+  yFeet?: number
+  horizontalDeg?: number // left/right rotation, in degrees
+  verticalDeg?: number // up/down rotation, in degrees
+}> = (props) => {
+  const graphing = useContextOrThrow(GraphingContext)
+
+  const beamMaterial = createBeamMaterial(BEAM_COLOR_CONNECTED)
+
+  const sphereBrush = borrowBrush(beamMaterial, { type: 'sphere' })
+  sphereBrush.scale.set(10, 10, 10)
+  sphereBrush.updateMatrixWorld()
+
+  const coneBrush = borrowBrush(beamMaterial, {
+    type: 'cone',
+    radius: Math.tan((45 * Math.PI) / 180 / 2),
+  })
+  coneBrush.scale.set(10, 10, 10)
+
+  const beamBrush = new Brush()
+
+  // recompute position, direction, and re-evaluate the beam whenever props change
+  createEffect(() => {
+    const x = props.xFeet ?? 0
+    const y = props.yFeet ?? 0
+
+    sphereBrush.position.set(x, y, 0)
+    sphereBrush.updateMatrixWorld()
+
+    const horizontalRad = ((props.horizontalDeg ?? 0) * Math.PI) / 180
+    const verticalRad = ((props.verticalDeg ?? 0) * Math.PI) / 180
+
+    // phi: angle from "straight up" (z axis), theta: angle around z axis (left/right)
+    const phi = (Math.PI / 2) - verticalRad
+    const theta = horizontalRad
+
+    coneBrush.position.set(x, y, 0)
+    coneBrush.quaternion.copy(
+      new Quaternion().setFromUnitVectors(
+        new Vector3(0, -1, 0),
+        new Vector3(
+          Math.sin(phi) * Math.cos(theta),
+          Math.sin(phi) * Math.sin(theta),
+          Math.cos(phi)
+        ).normalize()
+      )
+    )
+    coneBrush.updateMatrixWorld()
+
+    csgEvaluator.evaluate(sphereBrush, coneBrush, INTERSECTION, beamBrush)
+    beamBrush.updateMatrixWorld()
+
+    graphing.requestRender()
+  })
+
+  onMount(() => {
+    graphing.scene.add(beamBrush)
+    graphing.requestRender()
+
+    onCleanup(() => {
+      graphing.scene.remove(beamBrush)
+      graphing.requestRender()
+      releaseBrush(coneBrush)
+      releaseBrush(sphereBrush)
+      beamMaterial.dispose()
+    })
+  })
+
+  return null
+}

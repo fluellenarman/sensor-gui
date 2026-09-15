@@ -15,13 +15,19 @@ import { SensorsContext } from '../contexts/SensorsContext.js'
 import { metersPerFoot } from '../../util/mathConstants.js'
 import { For } from "solid-js";
 import { xid } from 'zod/v4'
+import { SimpleConicalBeam } from '../beams/conical/ConicalBeam.jsx'
+import { TTRx, TTRy } from '../sensors/Sensor.jsx'
 
-const [circle1X, setCircle1X] = createSignal(10)
-const [circle1Y, setCircle1Y] = createSignal(8)
+
+const [circle1X, setCircle1X] = createSignal(10)  // Drone
+const [circle1Y, setCircle1Y] = createSignal(8)   // Drone 
 const [circle1Opacity, setcircle1Opacity] = createSignal(.8)
-const [circle2X, setCircle2X] = createSignal(14)
-const [circle2Y, setCircle2Y] = createSignal(14)
+const [circle2X, setCircle2X] = createSignal(14)  // Missile
+const [circle2Y, setCircle2Y] = createSignal(14)  // Missile
 const [circle2Opacity, setcircle2Opacity] = createSignal(.8)
+
+const [showSimpleConical, setShowSimpleConical] = createSignal(false)
+const [simpleConicalAngle, setsimpleConicalAngle] = createSignal(0)
 
 type Flare = {
   id: number
@@ -39,6 +45,8 @@ const FLARE_FADE_STEP = 0.05
 
 const [renderFlare, setRenderFlare] = createSignal(false)
 
+let ShowSConicalTimeout = 100;
+
 let id = setInterval(() => {
     const opacity1 = circle1Opacity();
     const opacity2 = circle2Opacity();
@@ -52,7 +60,15 @@ let id = setInterval(() => {
         .map((flare) => ({ ...flare, opacity: flare.opacity - FLARE_FADE_STEP }))
         .filter((flare) => flare.opacity > 0)
     )
+    ShowSConicalTimeout -= 1;
+    if (ShowSConicalTimeout <= 0) {
+      setShowSimpleConical(false) 
+    }
 }, 100);
+
+function angleBetweenPoints(x1: number, y1: number, x2: number, y2: number): number {
+    return Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI); // Convert to degrees
+  }
 
 window.electronAPI.onDroneLocPing((loc: object) => {
   // console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
@@ -63,6 +79,14 @@ window.electronAPI.onDroneLocPing((loc: object) => {
   setcircle1Opacity(.8)
   setCircle1X(finalLoc.x)
   setCircle1Y(finalLoc.y)
+
+  ShowSConicalTimeout = 10;
+  if (TTRx() != 0 && TTRy() != 0) {
+    setShowSimpleConical(true)
+  }
+
+  const angle = angleBetweenPoints(TTRx(), TTRy(), circle1X(), circle1Y())
+  setsimpleConicalAngle(angle)
 })
 window.electronAPI.onMissileLocPing((loc: object) => {
   // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
@@ -231,6 +255,9 @@ export const Graph: Component<{
         <StaticCircle xFeet={circle1X()} yFeet={circle1Y()} radiusFeet={.5} opacity={circle1Opacity()} color={0xff0000} />
         <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} opacity={circle2Opacity()} color={0x00ff66} />
         {props.children}
+        <Show when={showSimpleConical()}>
+          <SimpleConicalBeam xFeet={TTRx()} yFeet={TTRy()} horizontalDeg={simpleConicalAngle()} verticalDeg={0} />
+        </Show>
 
         <For each={flares()}>
           {(flare) => (
