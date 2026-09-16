@@ -20,6 +20,10 @@ export class DiscoveryNetwork {
 		return this.peers.get(id);
 	}
 
+	setAddress(id: string, ip: string) {
+		this.peers.set(id, ip);
+	}
+
 	start() {
 		this.socket.on("message", (data, rinfo) => {
 			console.log(
