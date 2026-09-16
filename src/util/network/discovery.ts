@@ -2,33 +2,10 @@ import os from "os";
 import dgram from "dgram";
 import { DiscoveryMessage } from "./types";
 
-function getLocalAddresses() {
-	const interfaces = os.networkInterfaces();
-
-	return Object.entries(interfaces).flatMap(([name, addresses]) =>
-		(addresses ?? [])
-			.filter((iface) => iface.family === "IPv4" && !iface.internal)
-			.map((iface) => ({
-				name,
-				address: iface.address,
-				netmask: iface.netmask,
-			})),
-	);
-}
-
-function getBroadcastAddress(address: string, netmask: string) {
-	const ip = address.split(".").map(Number);
-	const mask = netmask.split(".").map(Number);
-
-	return ip.map((octet, i) => octet | (~mask[i] & 255)).join(".");
-}
-
 export class DiscoveryNetwork {
-	// Add new device ids here
-	private devices = new Set<string>(["blue-gui"]);
 	private socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
-
-	peers = new Map<string, string>();
+	private devices = new Set<string>(["blue-gui"]);
+	private peers = new Map<string, string>();
 
 	constructor(
 		private readonly id = "red-gui",
@@ -37,6 +14,10 @@ export class DiscoveryNetwork {
 		private readonly httpPort = 3000,
 	) {
 		this.start();
+	}
+
+	getAddress(id: string) {
+		return this.peers.get(id);
 	}
 
 	start() {
@@ -70,7 +51,7 @@ export class DiscoveryNetwork {
 		});
 	}
 
-	private broadcast() {
+	broadcast() {
 		const message: DiscoveryMessage = {
 			type: "DISCOVER",
 			id: this.id,
@@ -85,14 +66,8 @@ export class DiscoveryNetwork {
 				return;
 			}
 
-			for (const iface of getLocalAddresses()) {
-				const broadcast = getBroadcastAddress(
-					iface.address,
-					iface.netmask,
-				);
-				this.socket.send(data, this.port, broadcast);
-			}
-			// this.socket.send(data, this.port, this.multicast);
+			for (const address of getBroadcastAddresses())
+				this.socket.send(data, this.port, address);
 		}, 5000);
 	}
 
@@ -100,9 +75,7 @@ export class DiscoveryNetwork {
 		try {
 			const message = JSON.parse(data.toString()) as DiscoveryMessage;
 
-			if (message.id === this.id) {
-				return;
-			}
+			if (message.id === this.id) return;
 
 			switch (message.type) {
 				case "DISCOVER_RESPONSE":
@@ -121,10 +94,9 @@ export class DiscoveryNetwork {
 	}
 
 	private handleResponse(message: DiscoveryMessage, rinfo: dgram.RemoteInfo) {
-		// return if not in device list or already found
+		if (!this.devices.has(message.id)) return;
+
 		const ip = `${rinfo.address}:${message.port}`;
-		if (!this.devices.has(message.id) || this.peers.get(message.id) === ip)
-			return;
 		this.peers.set(message.id, ip);
 	}
 
@@ -138,7 +110,9 @@ export class DiscoveryNetwork {
 		// for testing on localhost
 		const data = Buffer.from(JSON.stringify(message));
 		if (
-			getLocalAddresses().some((iface) => iface.address === rinfo.address)
+			getDeviceAddresses().some(
+				(iface) => iface.address === rinfo.address,
+			)
 		) {
 			this.socket.send(data, this.port, this.multicast);
 			return;
@@ -147,3 +121,26 @@ export class DiscoveryNetwork {
 		this.socket.send(data, rinfo.port, rinfo.address);
 	}
 }
+
+export function getDeviceAddresses() {
+	const interfaces = os.networkInterfaces();
+	return Object.entries(interfaces).flatMap(([name, addresses]) =>
+		(addresses ?? [])
+			.filter((iface) => iface.family === "IPv4" && !iface.internal)
+			.map((iface) => ({
+				name,
+				address: iface.address,
+				netmask: iface.netmask,
+			})),
+	);
+}
+
+export function getBroadcastAddresses() {
+	return getDeviceAddresses().map((iface) => {
+		const ip = iface.address.split(".").map(Number);
+		const mask = iface.netmask.split(".").map(Number);
+		return ip.map((octet, i) => octet | (~mask[i] & 255)).join(".");
+	});
+}
+
+export default { DiscoveryNetwork, getDeviceAddresses, getBroadcastAddresses };
