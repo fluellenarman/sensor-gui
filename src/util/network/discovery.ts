@@ -62,7 +62,7 @@ export class DiscoveryNetwork {
 		const broadcastInterval = setInterval(() => {
 			if (this.devices.size == this.peers.size) {
 				clearInterval(broadcastInterval);
-				console.log("All peers discovered: ", this.devices.size);
+				console.log("All peers discovered: ", this.devices.keys());
 				return;
 			}
 
