@@ -123,7 +123,7 @@ export class DiscoveryNetwork {
 	private handleResponse(message: DiscoveryMessage, rinfo: dgram.RemoteInfo) {
 		// return if not in device list or already found
 		const ip = `${rinfo.address}:${message.port}`;
-		if (!this.devices.has(message.id) || this.peers.get(message.id) !== ip)
+		if (!this.devices.has(message.id) || this.peers.get(message.id) === ip)
 			return;
 		this.peers.set(message.id, ip);
 	}
