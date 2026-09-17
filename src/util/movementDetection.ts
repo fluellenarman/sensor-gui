@@ -6,8 +6,8 @@ export interface MovementDetectorConfig {
 }
 
 const defaultConfig: MovementDetectorConfig = {
-  warmupMs: 10000,
-  calibrationSamples: 100,
+  warmupMs: 1000,
+  calibrationSamples: 10,
   movementThresholdCm: 100,
   cooldownMs: 300,
 }

@@ -29,6 +29,9 @@ const [circle2Opacity, setcircle2Opacity] = createSignal(.8)
 const [showSimpleConical, setShowSimpleConical] = createSignal(false)
 const [simpleConicalAngle, setsimpleConicalAngle] = createSignal(0)
 
+const LOS_TIMEOUT_DURATION = 1000 // milliseconds
+const [LOStimeout, setLOStimeout] = createSignal(LOS_TIMEOUT_DURATION)
+
 type Flare = {
   id: number
   x: number
@@ -50,7 +53,6 @@ let ShowSConicalTimeout = 100;
 let id = setInterval(() => {
     const opacity1 = circle1Opacity();
     const opacity2 = circle2Opacity();
-    // if (radius <= 0) { continue; }
     if (circle1Opacity() >= 0) { setcircle1Opacity(opacity1 - .1) }
     if (circle2Opacity() >= 0) { setcircle2Opacity(opacity2 - .1) }
 
@@ -64,11 +66,52 @@ let id = setInterval(() => {
     if (ShowSConicalTimeout <= 0) {
       setShowSimpleConical(false) 
     }
+    setLOStimeout(LOStimeout() - 100);
 }, 100);
+
+window.electronAPI.onLOS_ping((loc: object) => {
+  // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
+  setLOStimeout(LOS_TIMEOUT_DURATION);
+  console.log("Graph.tsx: LOS ping received from main")
+})
 
 function angleBetweenPoints(x1: number, y1: number, x2: number, y2: number): number {
     return Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI); // Convert to degrees
+}
+
+function normalizeAngleDiff(diff: number): number {
+  // normalize to range (-180, 180]
+  let normalized = diff % 360
+  if (normalized > 180) normalized -= 360
+  if (normalized <= -180) normalized += 360
+  return normalized
+}
+
+function isDroneInBeam(sensor: any): boolean {
+  // only ultrasonic/virtual_missile_launcher sensors have a measuringAngle
+  if (sensor.type !== 'ultrasonic') {
+    return false
   }
+
+  const dx = circle1X() - sensor.xFeet
+  const dy = circle1Y() - sensor.yFeet
+  const distance = Math.sqrt(dx * dx + dy * dy)
+
+  // convert sensor max range (meters) to feet, and check drone is within range
+  const maxRangeFeet = sensor.maxRange / metersPerFoot
+  if (distance > maxRangeFeet) {
+    return false
+  }
+
+  // angle from sensor to drone
+  const angleToDrone = angleBetweenPoints(sensor.xFeet, sensor.yFeet, circle1X(), circle1Y())
+
+  // difference between sensor's facing angle and angle to drone
+  const angleDiff = Math.abs(normalizeAngleDiff(angleToDrone - sensor.horizontalAngle))
+
+  // drone is in beam if within half the measuring angle (cone half-width)
+  return angleDiff <= sensor.measuringAngle / 2
+}
 
 window.electronAPI.onDroneLocPing((loc: object) => {
   // console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
@@ -76,10 +119,12 @@ window.electronAPI.onDroneLocPing((loc: object) => {
     x: loc.x / 20,
     y: -((loc.y / 40) - 15)
   }
-  setcircle1Opacity(.8)
   setCircle1X(finalLoc.x)
   setCircle1Y(finalLoc.y)
-
+  if (LOStimeout() > 0) {
+    setcircle1Opacity(.8)
+  }
+  
   ShowSConicalTimeout = 10;
   if (TTRx() != 0 && TTRy() != 0) {
     setShowSimpleConical(true)
@@ -167,6 +212,17 @@ export const Graph: Component<{
   const grid = useContextOrThrow(GridContext)
   const cage = useContextOrThrow(CageContext)
   const sensors = useContextOrThrow(SensorsContext)
+
+  setInterval(() => {
+    console.log("Graph.tsx: sensors.sensors", sensors.sensors)
+    for (const sensor of sensors.sensors) {
+      console.log(`Sensor ${sensor.xFeet}, ${sensor.yFeet} has max range ${sensor.maxRange} feet`)
+      // console.log(circle1X(), circle1Y())
+      if (isDroneInBeam(sensor)) {
+        setcircle1Opacity(.8)
+      }
+    }
+  }, 1000)
 
   const getWidth = createMemo(() => grid.right - grid.left)
 

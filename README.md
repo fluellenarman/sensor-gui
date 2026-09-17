@@ -95,9 +95,10 @@ If the sensor is configured with a vertical rotation, and the ping is calculated
 
 Distance packets are supported in the following format:
 
-Data Packet Indicator | Data Packet Indicator | Sensor Id | Distance (cm)
----|---|---|---
-`0x04` | `0x00` | `int8` | `int16`
+
+| Data Packet Indicator | Data Packet Indicator | Sensor Id | Distance (cm) |
+| --------------------- | --------------------- | --------- | ------------- |
+| `0x04`                | `0x00`                | `int8`    | `int16`       |
 
 Example: `0x04000C003A`
 
@@ -107,9 +108,10 @@ Jam packets will be cause pings to be repeatedly registered at all sensors match
 
 Jam packets are supported in the following format:
 
-Data Packet Indicator | Jam Packet Indicator | Jammer Id | Target Sensor Type | Target Sensor Id
----|---|---|---|---
-`0x04` | `0x01` | `int8` | `int8` | `int8`
+
+| Data Packet Indicator | Jam Packet Indicator | Jammer Id | Target Sensor Type | Target Sensor Id |
+| --------------------- | -------------------- | --------- | ------------------ | ---------------- |
+| `0x04`                | `0x01`               | `int8`    | `int8`             | `int8`           |
 
 Example: `0x0401010000`
 
@@ -138,30 +140,40 @@ It uses **tailwindcss** for css classes and **daisyui** for ui primitives and th
 ### Development
 
 #### Run
+
 To run the application in dev mode, use `npm start` at the root directory of the repository.
 
-#### Run Mock Sensors
-After running the application in dev mode, with the DevTools opened, add a few sensors and in Console, run:
+#### ~~Run Mock Sensors~~  **THIS DOES NOT WORK- REPLACE THIS**
+
+~~After running the application in dev mode, with the DevTools opened, add a few sensors and in Console, run:~~
+
 ```
 window.electronAPI.toggleMockSensors(true)
 ```
+
 ![](./images/Screenshot%202026-08-18%20161818.png)
 
-to see them start sending data, to disable: 
+to see them start sending data, to disable:
+
 ```
 window.electronAPI.toggleMockSensors(false)
 ```
+
 #### Build
+
 To build the application into `out/` run `npm run make`.
 
 #### Release
+
 To generate a release from the last commit, do the following:
+
 ```shell
 git tag <version>
 git push origin <version>
 ```
 
 For example:
+
 ```shell
 git tag v4.0.0
 git push origin v4.0.0
@@ -172,7 +184,5 @@ This should start a runner on Spork that will build the project and create a rel
 ## What can go wrong with the Sensors:
 
 - Run into the problem of the ultrasonic program sending the "Unsupported packet type" debug log instead of the actual sensor data (Refers to sensor-network README.md).
-
 - GUI reset if laptop goes to sleep
-
 - Potential memory leak issues?
