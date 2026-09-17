@@ -30,6 +30,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendLauncherLocPing: (x: number, y: number) => ipcRenderer.send('launcherLocPing', x, y),
   onDroneLocPing: (callback) => ipcRenderer.on('droneLocPing', (_event, data) => callback(data)),
   onMissileLocPing: (callback) => ipcRenderer.on('missileLocPing', (_event, data) => callback(data)),
+  onLOS_ping: (callback) => ipcRenderer.on('LOS-ping', (_event, data) => callback(data)),
+  onFlarePing: (callback) => ipcRenderer.on('flarePing', (_event, data) => callback(data)),
   sendLOS_LocPing: (x: number, y: number) => ipcRenderer.send('LOS_LocPing', x, y),
+  onIP_feedback: (callback) => ipcRenderer.on('sendIP-feedback', (_event, data) => callback(data)),
 })
  

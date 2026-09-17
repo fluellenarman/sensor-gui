@@ -1,4 +1,4 @@
-import { Component, createEffect, createSignal, createMemo, JSX, onMount, onCleanup } from 'solid-js'
+import { Component, createEffect, createSignal, createMemo, JSX, onMount, onCleanup, Show } from 'solid-js'
 import { CageContext } from '../contexts/CageContext.js'
 import { GridContext } from '../contexts/GridContext.js'
 import { useContextOrThrow } from '../../util/useContextOrThrow.js'
@@ -13,14 +13,105 @@ import {
 import { GraphingContext, GraphingType } from '../contexts/GraphingContext.js'
 import { SensorsContext } from '../contexts/SensorsContext.js'
 import { metersPerFoot } from '../../util/mathConstants.js'
+import { For } from "solid-js";
 import { xid } from 'zod/v4'
-
-const [circleX, setCircleX] = createSignal(10)
-const [circleY, setCircleY] = createSignal(8)
-const [circle2X, setCircle2X] = createSignal(14)
-const [circle2Y, setCircle2Y] = createSignal(14)
+import { SimpleConicalBeam } from '../beams/conical/ConicalBeam.jsx'
+import { TTRx, TTRy } from '../sensors/Sensor.jsx'
 
 
+const [circle1X, setCircle1X] = createSignal(10)  // Drone
+const [circle1Y, setCircle1Y] = createSignal(8)   // Drone 
+const [circle1Opacity, setcircle1Opacity] = createSignal(.8)
+const [circle2X, setCircle2X] = createSignal(14)  // Missile
+const [circle2Y, setCircle2Y] = createSignal(14)  // Missile
+const [circle2Opacity, setcircle2Opacity] = createSignal(.8)
+
+const [showSimpleConical, setShowSimpleConical] = createSignal(false)
+const [simpleConicalAngle, setsimpleConicalAngle] = createSignal(0)
+
+const LOS_TIMEOUT_DURATION = 1000 // milliseconds
+const [LOStimeout, setLOStimeout] = createSignal(LOS_TIMEOUT_DURATION)
+
+type Flare = {
+  id: number
+  x: number
+  y: number
+  radius: number
+  opacity: number
+}
+
+const [flares, setFlares] = createSignal<Flare[]>([])
+let flareIdCounter = 0
+const FLARE_COUNT = 20
+const FLARE_SCATTER_RADIUS = 4 // feet
+const FLARE_FADE_STEP = 0.05
+
+const [renderFlare, setRenderFlare] = createSignal(false)
+
+let ShowSConicalTimeout = 100;
+
+let id = setInterval(() => {
+    const opacity1 = circle1Opacity();
+    const opacity2 = circle2Opacity();
+    if (circle1Opacity() >= 0) { setcircle1Opacity(opacity1 - .1) }
+    if (circle2Opacity() >= 0) { setcircle2Opacity(opacity2 - .1) }
+
+    // fade out flares and remove fully-faded ones
+    setFlares((current) =>
+      current
+        .map((flare) => ({ ...flare, opacity: flare.opacity - FLARE_FADE_STEP }))
+        .filter((flare) => flare.opacity > 0)
+    )
+    ShowSConicalTimeout -= 1;
+    if (ShowSConicalTimeout <= 0) {
+      setShowSimpleConical(false) 
+    }
+    setLOStimeout(LOStimeout() - 100);
+}, 100);
+
+window.electronAPI.onLOS_ping((loc: object) => {
+  // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
+  setLOStimeout(LOS_TIMEOUT_DURATION);
+  console.log("Graph.tsx: LOS ping received from main")
+})
+
+function angleBetweenPoints(x1: number, y1: number, x2: number, y2: number): number {
+    return Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI); // Convert to degrees
+}
+
+function normalizeAngleDiff(diff: number): number {
+  // normalize to range (-180, 180]
+  let normalized = diff % 360
+  if (normalized > 180) normalized -= 360
+  if (normalized <= -180) normalized += 360
+  return normalized
+}
+
+function isDroneInBeam(sensor: any): boolean {
+  // only ultrasonic/virtual_missile_launcher sensors have a measuringAngle
+  if (sensor.type !== 'ultrasonic') {
+    return false
+  }
+
+  const dx = circle1X() - sensor.xFeet
+  const dy = circle1Y() - sensor.yFeet
+  const distance = Math.sqrt(dx * dx + dy * dy)
+
+  // convert sensor max range (meters) to feet, and check drone is within range
+  const maxRangeFeet = sensor.maxRange / metersPerFoot
+  if (distance > maxRangeFeet) {
+    return false
+  }
+
+  // angle from sensor to drone
+  const angleToDrone = angleBetweenPoints(sensor.xFeet, sensor.yFeet, circle1X(), circle1Y())
+
+  // difference between sensor's facing angle and angle to drone
+  const angleDiff = Math.abs(normalizeAngleDiff(angleToDrone - sensor.horizontalAngle))
+
+  // drone is in beam if within half the measuring angle (cone half-width)
+  return angleDiff <= sensor.measuringAngle / 2
+}
 
 window.electronAPI.onDroneLocPing((loc: object) => {
   // console.log("Graph.tsx: received drone location from main", loc.x, loc.y)
@@ -28,8 +119,19 @@ window.electronAPI.onDroneLocPing((loc: object) => {
     x: loc.x / 20,
     y: -((loc.y / 40) - 15)
   }
-  setCircleX(finalLoc.x)
-  setCircleY(finalLoc.y)
+  setCircle1X(finalLoc.x)
+  setCircle1Y(finalLoc.y)
+  if (LOStimeout() > 0) {
+    setcircle1Opacity(.8)
+  }
+  
+  ShowSConicalTimeout = 10;
+  if (TTRx() != 0 && TTRy() != 0) {
+    setShowSimpleConical(true)
+  }
+
+  const angle = angleBetweenPoints(TTRx(), TTRy(), circle1X(), circle1Y())
+  setsimpleConicalAngle(angle)
 })
 window.electronAPI.onMissileLocPing((loc: object) => {
   // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
@@ -37,8 +139,28 @@ window.electronAPI.onMissileLocPing((loc: object) => {
     x: loc.x / 20,
     y: -((loc.y / 40) - 15)
   }
+  setcircle2Opacity(.8)
   setCircle2X(finalLoc.x)
   setCircle2Y(finalLoc.y)
+})
+window.electronAPI.onFlarePing((loc: object) => {
+  // console.log("Graph.tsx: received flare location from main", loc.x, loc.y)
+  const originX = circle1X()
+  const originY = circle1Y()
+
+  const newFlares: Flare[] = Array.from({ length: FLARE_COUNT }, () => {
+    const angle = Math.random() * Math.PI * 2
+    const distance = Math.random() * FLARE_SCATTER_RADIUS
+    return {
+      id: flareIdCounter++,
+      x: originX + Math.cos(angle) * distance,
+      y: originY + Math.sin(angle) * distance,
+      radius: 0.2 + Math.random() * 0.3,
+      opacity: .8,
+    }
+  })
+
+  setFlares((current) => [...current, ...newFlares])
 })
 
 export const StaticCircle: Component<{
@@ -46,6 +168,7 @@ export const StaticCircle: Component<{
   yFeet: number
   radiusFeet: number
   color?: number
+  opacity?: number
 }> = (props) => {
   const graphing = useContextOrThrow(GraphingContext)
 
@@ -53,7 +176,7 @@ export const StaticCircle: Component<{
   const material = new MeshBasicMaterial({
     color: props.color ?? 0x22c55e,
     transparent: true,
-    opacity: 0.8,
+    opacity: props.opacity ?? 0.8,
   })
   const mesh = new Mesh(geometry, material)
 
@@ -65,6 +188,11 @@ export const StaticCircle: Component<{
   createEffect(() => {
     mesh.position.set(props.xFeet, props.yFeet, 0)
     mesh.scale.set(props.radiusFeet, props.radiusFeet, 1)
+
+    // reactively update opacity like x/y/radius
+    material.opacity = props.opacity ?? 0.8
+    material.transparent = material.opacity < 1
+
     graphing.requestRender()
   })
 
@@ -84,6 +212,17 @@ export const Graph: Component<{
   const grid = useContextOrThrow(GridContext)
   const cage = useContextOrThrow(CageContext)
   const sensors = useContextOrThrow(SensorsContext)
+
+  setInterval(() => {
+    console.log("Graph.tsx: sensors.sensors", sensors.sensors)
+    for (const sensor of sensors.sensors) {
+      console.log(`Sensor ${sensor.xFeet}, ${sensor.yFeet} has max range ${sensor.maxRange} feet`)
+      // console.log(circle1X(), circle1Y())
+      if (isDroneInBeam(sensor)) {
+        setcircle1Opacity(.8)
+      }
+    }
+  }, 1000)
 
   const getWidth = createMemo(() => grid.right - grid.left)
 
@@ -169,9 +308,25 @@ export const Graph: Component<{
   return (
     <>
       <GraphingContext.Provider value={graphing}>
-        <StaticCircle xFeet={circleX()} yFeet={circleY()} radiusFeet={.5} color={0xff0000} />
-        <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} color={0x00ff66} />
+        <StaticCircle xFeet={circle1X()} yFeet={circle1Y()} radiusFeet={.5} opacity={circle1Opacity()} color={0xff0000} />
+        <StaticCircle xFeet={circle2X()} yFeet={circle2Y()} radiusFeet={.25} opacity={circle2Opacity()} color={0x00ff66} />
         {props.children}
+        <Show when={showSimpleConical()}>
+          <SimpleConicalBeam xFeet={TTRx()} yFeet={TTRy()} horizontalDeg={simpleConicalAngle()} verticalDeg={0} />
+        </Show>
+
+        <For each={flares()}>
+          {(flare) => (
+            <StaticCircle
+              xFeet={flare.x}
+              yFeet={flare.y}
+              radiusFeet={flare.radius}
+              opacity={flare.opacity}
+              color={0xff0000}
+            />
+          )}
+        </For>
+
         <div
           class="absolute size-min pointer-events-none"
           ref={threeContainer}
