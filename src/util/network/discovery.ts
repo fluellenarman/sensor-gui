@@ -35,17 +35,17 @@ export class DiscoveryNetwork {
 
 	private start() {
 		this.socket.on('message', (data, rinfo) => {
-			console.log(`[${this.id}] message`, data.toString(), rinfo.address, rinfo.port)
+			console.log(`[${this.id}]`, data.toString(), `${rinfo.address}:${rinfo.port}`)
 
 			this.handleMessage(data, rinfo)
 		})
 
 		this.socket.on('listening', () => {
-			console.log(`[${this.id}] listening`, this.socket.address())
+			console.log(`[${this.id}] listening on`, this.socket.address())
 		})
 
 		this.socket.on('error', (err) => {
-			console.error(`[${this.id}] socket error`, err)
+			console.error(`[${this.id}]`, err)
 		})
 
 		this.socket.on('close', () => {
