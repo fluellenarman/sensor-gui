@@ -33,7 +33,7 @@ export class DiscoveryNetwork {
 		this.peers.set(id, ip)
 	}
 
-	start() {
+	private start() {
 		this.socket.on('message', (data, rinfo) => {
 			console.log(`[${this.id}] message`, data.toString(), rinfo.address, rinfo.port)
 
@@ -59,7 +59,7 @@ export class DiscoveryNetwork {
 		})
 	}
 
-	broadcast() {
+	private broadcast() {
 		const message: DiscoveryMessage = {
 			type: 'DISCOVER',
 			id: this.id,
@@ -83,7 +83,7 @@ export class DiscoveryNetwork {
 		broadcastInterval = setInterval(broadcastDevice, 5000)
 	}
 
-	broadcastOnce() {
+	private broadcastOnce() {
 		if (this.devices.size === this.peers.size) {
 			console.log('All peers discovered:', this.devices.keys())
 			return
