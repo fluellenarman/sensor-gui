@@ -16,6 +16,10 @@ export class DiscoveryNetwork {
 		this.start()
 	}
 
+	getDevices() {
+		return this.devices
+	}
+
 	async getAddress(id: string, max_retries = 5) {
 		const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
@@ -33,7 +37,11 @@ export class DiscoveryNetwork {
 		this.peers.set(id, ip)
 	}
 
-	private start() {
+	deleteAddress(id: string) {
+		this.peers.delete(id)
+	}
+
+	start() {
 		this.socket.on('message', (data, rinfo) => {
 			console.log(`[${this.id}]`, data.toString(), `${rinfo.address}:${rinfo.port}`)
 

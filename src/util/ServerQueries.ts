@@ -2,26 +2,25 @@ import os from 'os'
 import express from 'express'
 import { ipcMain, BrowserWindow } from 'electron'
 import { DiscoveryNetwork, getDeviceAddresses } from './network/discovery'
-import { add } from 'three/tsl'
 
-let networkURL = '';
-let gWindow: BrowserWindow;
+let networkURL = ''
+let gWindow: BrowserWindow
 
 function getLocalIPAddress() {
-    const interfaces = os.networkInterfaces();
-    const addresses = [];
+	const interfaces = os.networkInterfaces()
+	const addresses = []
 
-    for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
-            // Skip internal (loopback) and non-IPv4 addresses
-            if (iface.family === 'IPv4' && !iface.internal) {
-                addresses.push({ name, address: iface.address });
-            }
-        }
-    }
+	for (const name of Object.keys(interfaces)) {
+		for (const iface of interfaces[name]) {
+			// Skip internal (loopback) and non-IPv4 addresses
+			if (iface.family === 'IPv4' && !iface.internal) {
+				addresses.push({ name, address: iface.address })
+			}
+		}
+	}
 
-    console.log("from server, addresses:\n",addresses[0]?.address, '\n');
-    return addresses[0]?.address
+	console.log('from server, addresses:\n', addresses[0]?.address, '\n')
+	return addresses[0]?.address
 }
 let discoveryNetwork: DiscoveryNetwork
 
@@ -32,41 +31,53 @@ function mainTest() {
 }
 
 function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
-    gWindow = mainWindow;
-    discoveryNetwork = discovery
-    
-    ipcMain.on('launchMissileRequest', () => {
-        console.log("ServerQueries.ts: received launch missile request from renderer")
-        launchQuery();
-    })
-    ipcMain.on('launcherLocPing', (event, x: number, y: number) => {
-        console.log(`ServerQueries.ts: received launcher location ping from renderer: x=${x}, y=${y}`)
-        launcherLocQuery(x, y);
-        // Here you can handle the x and y coordinates as needed
-    })
-    ipcMain.on('LOS_LocPing', (event, x: number, y: number) => {
-        console.log(`ServerQueries.ts: received launcher LOS location ping from renderer: x=${x}, y=${y}`)
-        LOS_LocQuery(x, y);
-        // Here you can handle the x and y coordinates as needed
-    })
-    discoveryNetwork = discovery
+	gWindow = mainWindow
+	discoveryNetwork = discovery
 
-	ipcMain.on('launchMissileRequest', () => {
+	ipcMain.handle('get-devices', () => {
+		return discoveryNetwork.getDevices()
+	})
+
+	ipcMain.on('ip-address', (event, data) => {
+		console.log('Received IP address from renderer:', data)
+		sendManualAddress(event, data)
+	})
+
+	ipcMain.on('launchMissileRequest', (event) => {
 		console.log('ServerQueries.ts: received launch missile request from renderer')
-		launchQuery()
+		launchQuery(event)
 	})
 	ipcMain.on('launcherLocPing', (event, x: number, y: number) => {
 		console.log(
 			`ServerQueries.ts: received launcher location ping from renderer: x=${x}, y=${y}`
 		)
-		launcherLocQuery(x, y)
+		launcherLocQuery(event, x, y)
 		// Here you can handle the x and y coordinates as needed
 	})
 	ipcMain.on('LOS_LocPing', (event, x: number, y: number) => {
 		console.log(
 			`ServerQueries.ts: received launcher LOS location ping from renderer: x=${x}, y=${y}`
 		)
-		LOS_LocQuery(x, y)
+		LOS_LocQuery(event, x, y)
+		// Here you can handle the x and y coordinates as needed
+	})
+
+	ipcMain.on('launchMissileRequest', (event) => {
+		console.log('ServerQueries.ts: received launch missile request from renderer')
+		launchQuery(event)
+	})
+	ipcMain.on('launcherLocPing', (event, x: number, y: number) => {
+		console.log(
+			`ServerQueries.ts: received launcher location ping from renderer: x=${x}, y=${y}`
+		)
+		launcherLocQuery(event, x, y)
+		// Here you can handle the x and y coordinates as needed
+	})
+	ipcMain.on('LOS_LocPing', (event, x: number, y: number) => {
+		console.log(
+			`ServerQueries.ts: received launcher LOS location ping from renderer: x=${x}, y=${y}`
+		)
+		LOS_LocQuery(event, x, y)
 		// Here you can handle the x and y coordinates as needed
 	})
 	const ip = getDeviceAddresses()[0].address
@@ -74,33 +85,33 @@ function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
 	server.use(express.json())
 	const port = 3000
 
-    server.get('/', (req, res) => {
-        res.send('Hello from RED GUI server!')
-    })
-    server.post('/droneLoc', (req, res) => {
-        res.send('ok')
-        // console.log("ServerQueries.ts: received drone location ping from Blue GUI")
-        const data = req.body;
-        console.log(data); // Log the received dataping from Blue GUI
-        mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
-    })
-    server.post('/missileLoc', (req, res) => {
-        res.send('ok')
-        // console.log("ServerQueries.ts: received missile location ping from Blue GUI")
-        const data = req.body;
-        console.log(data);
-        mainWindow.webContents.send('missileLocPing', data) // Forward the data to the renderer process
-    })
-    server.get('/LOS-ping', (req, res) => {
-        res.send('ok')
-        console.log("ServerQueries.ts: received LOS ping from Blue GUI")
-        mainWindow.webContents.send('LOS-ping') // Forward the data to the renderer process
-    })
-    server.get('/FlarePing', (req, res) => {
-        res.send('ok')
-        console.log("ServerQueries.ts: /FlarePing HIT from Blue GUI")
-        mainWindow.webContents.send('flarePing') // Forward the data to the renderer process
-    })
+	server.get('/', (req, res) => {
+		res.send('Hello from RED GUI server!')
+	})
+	server.post('/droneLoc', (req, res) => {
+		res.send('ok')
+		// console.log("ServerQueries.ts: received drone location ping from Blue GUI")
+		const data = req.body
+		console.log(data) // Log the received dataping from Blue GUI
+		mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
+	})
+	server.post('/missileLoc', (req, res) => {
+		res.send('ok')
+		// console.log("ServerQueries.ts: received missile location ping from Blue GUI")
+		const data = req.body
+		console.log(data)
+		mainWindow.webContents.send('missileLocPing', data) // Forward the data to the renderer process
+	})
+	server.get('/LOS-ping', (req, res) => {
+		res.send('ok')
+		console.log('ServerQueries.ts: received LOS ping from Blue GUI')
+		mainWindow.webContents.send('LOS-ping') // Forward the data to the renderer process
+	})
+	server.get('/FlarePing', (req, res) => {
+		res.send('ok')
+		console.log('ServerQueries.ts: /FlarePing HIT from Blue GUI')
+		mainWindow.webContents.send('flarePing') // Forward the data to the renderer process
+	})
 	server.listen(port, () => {
 		console.log(`ServerQueries.ts: Server is running on ${ip}:${port}`)
 	})
@@ -143,16 +154,16 @@ async function sendTestQuery(ip: string) {
 	console.log(url)
 	try {
 		const response = fetch(url, {
-            method: 'GET',
-        });
-        gWindow.webContents.send('sendIP-feedback', "success")
+			method: 'GET'
+		})
+		gWindow.webContents.send('sendIP-feedback', 'success')
 		const data = await response.text()
 		console.log(data)
 		discoveryNetwork.setAddress('blue-gui', url)
 		console.log(url)
 	} catch (error) {
 		console.log(error)
-        gWindow.webContents.send('sendIP-feedback', "failed")
+		gWindow.webContents.send('sendIP-feedback', 'failed')
 	}
 }
 
@@ -173,31 +184,53 @@ async function sendTestQuery(ip: string) {
 // }
 
 // url will need to be changed for PROD
-async function launchQuery() {
+async function launchQuery(event) {
+	const id = 'blue-gui'
+	const api = '/pingMissileLaunch'
 	try {
-		const address = await discoveryNetwork.getAddress('blue-gui')
+		const address = await discoveryNetwork.getAddress(id)
 		if (!address) {
-			console.log('launchQuery(): failed to connect to red gui')
+			console.log('launchQuery(): failed to connect to blue gui')
+			event.sender.send('enable-ip-button', { id: id, api: api })
 			return
 		}
 
-		const url = `http://${address}/pingMissileLaunch`
+		const url = `http://${address}${api}`
 		await fetch(url)
 		console.log(url)
 	} catch (error) {
 		console.error('Error in launchQuery():', error)
+		discoveryNetwork.deleteAddress(id)
 	}
 }
 
-async function launcherLocQuery(x: number, y: number) {
+async function sendManualAddress(event, data) {
+	const { id, ip } = data
+	const port = 3003
 	try {
-		const address = await discoveryNetwork.getAddress('blue-gui')
+		const address = `${ip}:${port}`
+		const url = `http://${address}`
+		await fetch(url)
+		event.sender.send('disable-ip-button', {})
+		discoveryNetwork.setAddress(id, address)
+	} catch {
+		event.sender.send('enable-ip-button', {})
+		discoveryNetwork.deleteAddress(id)
+	}
+}
+
+async function launcherLocQuery(event, x: number, y: number) {
+	const id = 'blue-gui'
+	const api = '/pingLauncherLoc'
+	try {
+		const address = await discoveryNetwork.getAddress(id)
 		if (!address) {
-			console.log('launcherLocQuery(): failed to connect to red gui')
+			console.log('launcherLocQuery(): failed to connect to blue gui')
+			event.sender.send('enable-ip-button', { id: id, api: api })
 			return
 		}
 
-		const url = `http://${address}/pingLauncherLoc`
+		const url = `http://${address}${api}`
 		const payload = { x, y }
 		await fetch(url, {
 			method: 'POST',
@@ -207,18 +240,22 @@ async function launcherLocQuery(x: number, y: number) {
 		console.log(url)
 	} catch (error) {
 		console.error('Error in launcherLocQuery():', error)
+		discoveryNetwork.deleteAddress(id)
 	}
 }
 
-async function LOS_LocQuery(x: number, y: number) {
+async function LOS_LocQuery(event, x: number, y: number) {
+	const id = 'blue-gui'
+	const api = '/pingLauncherLoc'
 	try {
-		const address = await discoveryNetwork.getAddress('blue-gui')
+		const address = await discoveryNetwork.getAddress(id)
 		if (!address) {
-			console.log('LOS_LocQuery(): failed to connect to red gui')
+			console.log('LOS_LocQuery(): failed to connect to blue gui')
+			event.sender.send('enable-ip-button', { id: id, api: api })
 			return
 		}
 
-		const url = `http://${address}/pingLauncherLoc`
+		const url = `http://${address}${api}`
 		const payload = { x, y }
 		await fetch(url, {
 			method: 'POST',
@@ -228,6 +265,7 @@ async function LOS_LocQuery(x: number, y: number) {
 		console.log(url)
 	} catch (error) {
 		console.error('Error in LOS_LocQuery():', error)
+		discoveryNetwork.deleteAddress(id)
 	}
 }
 
