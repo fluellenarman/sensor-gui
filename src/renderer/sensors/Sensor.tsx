@@ -26,24 +26,6 @@ const [iconColor, setIconColor] = createSignal('black')
 export const [TTRx, setTTRx] = createSignal(0)
 export const [TTRy, setTTRy] = createSignal(0)
 
-let LOS_received = false
-
-window.electronAPI.onLOS_ping((loc: object) => {
-  // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
-  console.log("LOS ping received from main")
-  setIconColor('green');
-  LOS_received = true;
-})
-
-setInterval(() => { // To reset the icon color to black if no LOS ping is received within 2 second
-  if (LOS_received === true) {
-    LOS_received = false
-  } else if (LOS_received === false) {
-    setIconColor('black');
-  }
-}, 1000)
-
-
 // Visual indicator for a sensor and its pings
 export const Sensor: Component<{
   setSensor: SetStoreFunction<SensorData>
