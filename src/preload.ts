@@ -37,5 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	onEnableAddressButton: (callback) =>
 		ipcRenderer.on('enable-ip-button', (_event, value) => callback(value)),
 	onDisableAddressButton: (callback) =>
-		ipcRenderer.on('disable-ip-button', (_event, value) => callback(value))
+		ipcRenderer.on('disable-ip-button', (_event, value) => callback(value)),
+	onDroneStatusPing: (callback) =>
+		ipcRenderer.on('droneStatus', (_event, value) => callback(value))
 })
