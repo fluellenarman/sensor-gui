@@ -116,6 +116,12 @@ function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
 		mainWindow.webContents.send('missileLocPing', data) // Forward the data to the renderer process
 	})
 
+	server.post('/droneStatus', (req, res) => {
+		res.send('ok')
+		const data = req.body
+		mainWindow.webContents.send('droneStatus', data)
+	})
+
 	testQuery()
 
 	console.log('ServerQueries.ts: startServer() END\n')

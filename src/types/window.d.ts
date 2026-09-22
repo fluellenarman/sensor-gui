@@ -27,6 +27,7 @@ declare global {
 			sendAddress: (data: object) => void
 			onEnableAddressButton: (data) => void
 			onDisableAddressButton: (data) => void
+			onDroneStatusPing: (data) => void
 		}
 	}
 }
