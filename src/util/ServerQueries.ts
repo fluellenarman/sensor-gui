@@ -74,6 +74,32 @@ function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
 	server.get('/', (req, res) => {
 		res.send('Hello from RED GUI server!')
 	})
+
+	server.get('/LOS-ping', (req, res) => {
+		res.send('ok')
+		console.log('ServerQueries.ts: received LOS ping from Blue GUI')
+		mainWindow.webContents.send('LOS-ping') // Forward the data to the renderer process
+	})
+
+	server.get('/FlarePing', (req, res) => {
+		res.send('ok')
+		console.log('ServerQueries.ts: /FlarePing HIT from Blue GUI')
+		mainWindow.webContents.send('flarePing') // Forward the data to the renderer process
+	})
+
+	server.get('/jamPing', (req, res) => {
+		res.send('ok')
+		const ultrasonicTypeId = 1
+		const ultrasonicSensorId = 0 // Jam all sensors
+		const jamTotal = 100
+		let jamOccurences = 0
+		const jamInterval = setInterval(() => {
+			if (jamOccurences === jamTotal) clearInterval(jamInterval)
+			jamOccurences++
+			mainWindow.webContents.send('jam', ultrasonicTypeId, ultrasonicSensorId)
+		}, 100)
+	})
+
 	server.post('/droneLoc', (req, res) => {
 		res.send('ok')
 		// console.log("ServerQueries.ts: received drone location ping from Blue GUI")
@@ -81,22 +107,13 @@ function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
 		console.log(data) // Log the received dataping from Blue GUI
 		mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
 	})
+
 	server.post('/missileLoc', (req, res) => {
 		res.send('ok')
 		// console.log("ServerQueries.ts: received missile location ping from Blue GUI")
 		const data = req.body
 		console.log(data)
 		mainWindow.webContents.send('missileLocPing', data) // Forward the data to the renderer process
-	})
-	server.get('/LOS-ping', (req, res) => {
-		res.send('ok')
-		console.log('ServerQueries.ts: received LOS ping from Blue GUI')
-		mainWindow.webContents.send('LOS-ping') // Forward the data to the renderer process
-	})
-	server.get('/FlarePing', (req, res) => {
-		res.send('ok')
-		console.log('ServerQueries.ts: /FlarePing HIT from Blue GUI')
-		mainWindow.webContents.send('flarePing') // Forward the data to the renderer process
 	})
 
 	testQuery()
