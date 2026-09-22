@@ -62,28 +62,14 @@ function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
 		// Here you can handle the x and y coordinates as needed
 	})
 
-	ipcMain.on('launchMissileRequest', (event) => {
-		console.log('ServerQueries.ts: received launch missile request from renderer')
-		launchQuery(event)
-	})
-	ipcMain.on('launcherLocPing', (event, x: number, y: number) => {
-		console.log(
-			`ServerQueries.ts: received launcher location ping from renderer: x=${x}, y=${y}`
-		)
-		launcherLocQuery(event, x, y)
-		// Here you can handle the x and y coordinates as needed
-	})
-	ipcMain.on('LOS_LocPing', (event, x: number, y: number) => {
-		console.log(
-			`ServerQueries.ts: received launcher LOS location ping from renderer: x=${x}, y=${y}`
-		)
-		LOS_LocQuery(event, x, y)
-		// Here you can handle the x and y coordinates as needed
-	})
 	const ip = getDeviceAddresses()[0].address
 	const server = express()
 	server.use(express.json())
 	const port = 3000
+
+	server.listen(port, () => {
+		console.log(`ServerQueries.ts: Server is running on ${ip}:${port}`)
+	})
 
 	server.get('/', (req, res) => {
 		res.send('Hello from RED GUI server!')
@@ -111,27 +97,6 @@ function startServer(mainWindow: BrowserWindow, discovery: DiscoveryNetwork) {
 		res.send('ok')
 		console.log('ServerQueries.ts: /FlarePing HIT from Blue GUI')
 		mainWindow.webContents.send('flarePing') // Forward the data to the renderer process
-	})
-	server.listen(port, () => {
-		console.log(`ServerQueries.ts: Server is running on ${ip}:${port}`)
-	})
-
-	server.get('/', (req, res) => {
-		res.send('Hello from RED GUI server!')
-	})
-	server.post('/droneLoc', (req, res) => {
-		res.send('ok')
-		console.log('ServerQueries.ts: received drone location ping from Blue GUI')
-		const data = req.body
-		console.log(data) // Log the received dataping from Blue GUI
-		mainWindow.webContents.send('droneLocPing', data) // Forward the data to the renderer process
-	})
-	server.post('/missileLoc', (req, res) => {
-		res.send('ok')
-		console.log('ServerQueries.ts: received missile location ping from Blue GUI')
-		const data = req.body
-		console.log(data)
-		mainWindow.webContents.send('missileLocPing', data) // Forward the data to the renderer process
 	})
 
 	testQuery()
