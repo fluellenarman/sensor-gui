@@ -63,7 +63,7 @@ let id = setInterval(() => {
         .filter((flare) => flare.opacity > 0)
     )
     ShowSConicalTimeout -= 1;
-    if (ShowSConicalTimeout <= 0) {
+    if (ShowSConicalTimeout < 0) {
       setShowSimpleConical(false) 
     }
     setLOStimeout(LOStimeout() - 100);
@@ -72,6 +72,8 @@ let id = setInterval(() => {
 window.electronAPI.onLOS_ping((loc: object) => {
   // console.log("Graph.tsx: received missile location from main", loc.x, loc.y)
   setLOStimeout(LOS_TIMEOUT_DURATION);
+  ShowSConicalTimeout = 10
+  setShowSimpleConical(true)
   console.log("Graph.tsx: LOS ping received from main")
 })
 
@@ -125,10 +127,6 @@ window.electronAPI.onDroneLocPing((loc: object) => {
     setcircle1Opacity(.8)
   }
   
-  ShowSConicalTimeout = 10;
-  if (TTRx() != 0 && TTRy() != 0) {
-    setShowSimpleConical(true)
-  }
 
   const angle = angleBetweenPoints(TTRx(), TTRy(), circle1X(), circle1Y())
   setsimpleConicalAngle(angle)
