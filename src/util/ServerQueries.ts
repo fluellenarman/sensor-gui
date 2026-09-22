@@ -234,7 +234,7 @@ async function launcherLocQuery(event, x: number, y: number) {
 
 async function LOS_LocQuery(event, x: number, y: number) {
 	const id = 'blue-gui'
-	const api = '/pingLauncherLoc'
+	const api = '/pingLOSLoc'
 	try {
 		const address = await discoveryNetwork.getAddress(id)
 		if (!address) {
