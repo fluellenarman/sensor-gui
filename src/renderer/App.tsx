@@ -36,23 +36,6 @@ export const App: Component<Record<string, never>> = () => {
 		columnCount: 0
 	})
 
-	window.electronAPI.onIP_feedback((data) => {
-		console.log('IP_addressInput.tsx: onIP_feedback: HIT')
-		if (data == 'progress') {
-			toast.loading('Connecting to IP address...', { duration: 3000 })
-			console.log('IP_addressInput.tsx: onReqToLOSLoc: progress')
-		} else if (data == 'success') {
-			console.log('IP_addressInput.tsx: onReqToLOSLoc: success')
-			toast.success('Successfully connected to IP address.', { duration: 5000 })
-		} else if (data == 'failed') {
-			console.log('IP_addressInput.tsx: onReqToLOSLoc: failed')
-			toast.error(
-				'Failed to connect to IP address. Please check the address and try again.',
-				{ duration: 5000 }
-			)
-		}
-	})
-
 	async function loadCage() {
 		const loadedCage = await window.electronAPI.loadCageConfiguration()
 		setCage((prev) => loadedCage ?? prev)

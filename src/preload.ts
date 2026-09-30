@@ -2,11 +2,9 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
 import { contextBridge, ipcRenderer } from 'electron'
+
 import { Ping } from './types/Pings'
-import { DeviceConnections } from './types/DevicesStatus'
-import { ReadlineParser, SerialPort } from 'serialport'
 import { CageData } from './renderer/contexts/CageContext'
-import { send } from 'vite'
 
 contextBridge.exposeInMainWorld('electronAPI', {
 	onPingReceived: (callback: (ping: Ping) => unknown) =>
@@ -18,26 +16,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
 		ipcRenderer.invoke('try-set-connection', path, connect),
 	saveCageConfiguration: (cage: CageData) => ipcRenderer.invoke('save-cage', cage),
 	loadCageConfiguration: () => ipcRenderer.invoke('load-cage'),
-	closeApp: () => ipcRenderer.send('close'),
 	onJam: (callback: (typeId: number, sensorId: number) => unknown) =>
 		ipcRenderer.on('jam', (_, typeId, sensorId) => callback(typeId, sensorId)),
 	toggleMockSensors: (enabled: boolean) => ipcRenderer.invoke('toggle-mock-sensors', enabled),
-	sendLaunchMissileRequest: () => ipcRenderer.send('launchMissileRequest'),
-	sendLauncherLocPing: (x: number, y: number) => ipcRenderer.send('launcherLocPing', x, y),
-	onDroneLocPing: (callback) => ipcRenderer.on('droneLocPing', (_event, data) => callback(data)),
+	onDroneLocPing: (callback) =>
+		ipcRenderer.on('drone-location', (_event, data) => callback(data)),
 	onMissileLocPing: (callback) =>
-		ipcRenderer.on('missileLocPing', (_event, data) => callback(data)),
-	onLOS_ping: (callback) => ipcRenderer.on('LOS-ping', (_event, data) => callback(data)),
-	onFlarePing: (callback) => ipcRenderer.on('flarePing', (_event, data) => callback(data)),
-	sendLOS_LocPing: (x: number, y: number) => ipcRenderer.send('LOS_LocPing', x, y),
-	onIP_feedback: (callback) =>
-		ipcRenderer.on('sendIP-feedback', (_event, data) => callback(data)),
+		ipcRenderer.on('missile-location', (_event, data) => callback(data)),
+	onLOS_ping: (callback) => ipcRenderer.on('line-of-sight', (_event, data) => callback(data)),
+	onFlarePing: (callback) => ipcRenderer.on('flare', (_event, data) => callback(data)),
 	getDevices: () => ipcRenderer.invoke('get-devices'),
-	sendAddress: (data) => ipcRenderer.send('ip-address', data),
 	onEnableAddressButton: (callback) =>
 		ipcRenderer.on('enable-ip-button', (_event, value) => callback(value)),
 	onDisableAddressButton: (callback) =>
 		ipcRenderer.on('disable-ip-button', (_event, value) => callback(value)),
 	onDroneStatusPing: (callback) =>
-		ipcRenderer.on('droneStatus', (_event, value) => callback(value))
+		ipcRenderer.on('drone-status', (_event, value) => callback(value)),
+
+	sendAddress: (data) => ipcRenderer.send('connect', data),
+	sendLOS_LocPing: (x: number, y: number) =>
+		ipcRenderer.send('send-line-of-sight-location', x, y),
+	sendLauncherLocPing: (x: number, y: number) =>
+		ipcRenderer.send('send-missile-launcher-location', x, y),
+	sendLaunchMissileRequest: () => ipcRenderer.send('send-launch-missile'),
+	closeApp: () => ipcRenderer.send('close')
 })

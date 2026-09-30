@@ -28,6 +28,7 @@ declare global {
 			onEnableAddressButton: (data) => void
 			onDisableAddressButton: (data) => void
 			onDroneStatusPing: (data) => void
+			connectToAddress: (data) => void
 		}
 	}
 }

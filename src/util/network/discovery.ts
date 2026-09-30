@@ -1,6 +1,8 @@
 import os from 'os'
 import dgram from 'dgram'
+
 import { DiscoveryMessage } from './types'
+import { colorPrint } from '../logging'
 
 export class DiscoveryNetwork {
 	private socket = dgram.createSocket({ type: 'udp4', reuseAddr: true })
@@ -43,21 +45,19 @@ export class DiscoveryNetwork {
 
 	start() {
 		this.socket.on('message', (data, rinfo) => {
-			console.log(`[${this.id}]`, data.toString(), `${rinfo.address}:${rinfo.port}`)
-
 			this.handleMessage(data, rinfo)
 		})
 
 		this.socket.on('listening', () => {
-			console.log(`[${this.id}] listening on`, this.socket.address())
+			colorPrint('green', `[${this.id}] listening on`, this.socket.address())
 		})
 
 		this.socket.on('error', (err) => {
-			console.error(`[${this.id}]`, err)
+			colorPrint('red', `[${this.id}]`, err)
 		})
 
 		this.socket.on('close', () => {
-			console.log(`[${this.id}] socket closed`)
+			colorPrint('green', `[${this.id}] socket closed`)
 		})
 
 		this.socket.bind(this.port, () => {
@@ -79,7 +79,7 @@ export class DiscoveryNetwork {
 		const broadcastDevice = () => {
 			if (this.devices.size === this.peers.size) {
 				clearInterval(broadcastInterval)
-				console.log('All peers discovered:', this.devices.keys())
+				colorPrint('green', 'All peers discovered:', ...this.devices.keys())
 				return
 			}
 
@@ -93,7 +93,7 @@ export class DiscoveryNetwork {
 
 	private broadcastOnce() {
 		if (this.devices.size === this.peers.size) {
-			console.log('All peers discovered:', this.devices.keys())
+			colorPrint('green', 'All peers discovered:', ...this.devices.keys())
 			return
 		}
 
@@ -122,10 +122,10 @@ export class DiscoveryNetwork {
 					this.handleRequest(rinfo)
 					break
 				default:
-					console.log('Error: unknown message type: ', message.type)
+					colorPrint('red', 'handleMessage(): Error: unknown message type', message.type)
 			}
 		} catch {
-			console.error('Invalid discovery packet')
+			colorPrint('red', 'handleMessage(): Error: invalid discovery packet')
 		}
 	}
 
@@ -134,6 +134,7 @@ export class DiscoveryNetwork {
 
 		const ip = `${rinfo.address}:${message.port}`
 		this.peers.set(message.id, ip)
+		colorPrint('green', 'Peer discovered:', message.id, ip)
 	}
 
 	private handleRequest(rinfo: dgram.RemoteInfo) {
@@ -175,4 +176,31 @@ export function getBroadcastAddresses() {
 	})
 }
 
-export default { DiscoveryNetwork, getDeviceAddresses, getBroadcastAddresses }
+export function getWifiAddress(): string | null {
+	const interfaces = os.networkInterfaces()
+	const platform = process.platform
+
+	for (const interfaceName of Object.keys(interfaces)) {
+		let isWifi = false
+
+		if (platform === 'win32') {
+			isWifi = /wi-fi|wireless|wlan/i.test(interfaceName)
+		} else if (platform === 'linux') {
+			isWifi = /^wl/.test(interfaceName)
+		}
+
+		if (isWifi) {
+			const addresses = interfaces[interfaceName]
+			if (addresses) {
+				const ipv4 = addresses.find((info) => info.family === 'IPv4' && !info.internal)
+				if (ipv4) {
+					return ipv4.address
+				}
+			}
+		}
+	}
+
+	return null
+}
+
+export default DiscoveryNetwork

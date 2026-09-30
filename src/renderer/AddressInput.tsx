@@ -13,7 +13,7 @@ const AddressInput: Component = () => {
 
 	const [devices] = createResource(fetchDevices)
 
-	window.electronAPI.onEnableAddressButton((data) => {
+	window.electronAPI.onEnableAddressButton(() => {
 		ipButton.disabled = false
 	})
 
